@@ -37,12 +37,16 @@ export default function HistoricalChart({
   sensorName, 
   days = 1 
 }: HistoricalChartProps) {
-  const CACHE_TTL_MS = 300000; // 5 minutos (aumentado para reducir peticiones)
+  const CACHE_TTL_MS = 600000; // 10 minutos (aumentado para reducir peticiones a PRTG)
+  const REFRESH_INTERVAL_MS = 600000; // 10 minutos (sincronizado con caché)
+  
   const [data, setData] = useState<ChartDataPoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedPeriod, setSelectedPeriod] = useState(days);
   const [unit, setUnit] = useState<'kbit' | 'mbit'>('kbit'); // CAMBIADO: arranca en kbit/s como PRTG
+  const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
+  const [relativeTime, setRelativeTime] = useState<string>('');
 
   // 🧠 Cache helpers
   const cacheKey = (period: number) => `historical:${sensorId}:${period}`;
@@ -65,7 +69,10 @@ export default function HistoricalChart({
 
   // 🔄 Cargar datos históricos con delay para evitar rate limiting y cache TTL 2min
   const fetchHistoricalData = async (period: number, retryCount = 0) => {
-    setLoading(true);
+    // Si hay datos y solo estamos refrescando, no mostrar loading
+    if (data.length === 0) {
+      setLoading(true);
+    }
     setError(null);
 
     try {
@@ -73,6 +80,7 @@ export default function HistoricalChart({
       const cached = readCache(period);
       if (cached) {
         setData(cached);
+        setLastUpdate(new Date()); // Actualizar lastUpdate aunque sea de caché
         setLoading(false);
         return;
       }
@@ -82,9 +90,13 @@ export default function HistoricalChart({
       );
 
       if (!response.ok) {
-        // Si es error 429 (rate limit), NO reintentar - mostrar mensaje específico
+        // Si es error 429 (rate limit), NO mostrar error crítico - mantener datos actuales
         if (response.status === 429) {
-          throw new Error('El servidor PRTG está limitando las peticiones. Espera unos segundos y recarga la página.');
+          console.warn(`⚠️ Rate limit en sensor ${sensorId}, reintentando en 30s...`);
+          // Reintentar después de 30 segundos SIN mostrar error al usuario
+          setTimeout(() => fetchHistoricalData(period, retryCount), 30000);
+          setLoading(false);
+          return;
         }
         // Si es error 500 y es el primer intento, reintentar después de 3 segundos
         if (response.status === 500 && retryCount < 1) {
@@ -100,35 +112,43 @@ export default function HistoricalChart({
       if (result.success && result.data) {
         // Formatear datos para Recharts con timestamp único en cada punto
         const formattedData = result.data.map((point: ChartDataPoint, index: number) => {
-          const pointDate = new Date(point.datetime_raw * 1000);
+          // PRTG envía timestamp como texto: "22/10/2025 12:40:00 - 12:45:00"
+          // Vamos a parsear la PRIMERA fecha (inicio del intervalo)
+          const timestampText = point.timestamp; // ej: "22/10/2025 12:40:00 - 12:45:00"
+          const startDateTime = timestampText.split(' - ')[0]; // "22/10/2025 12:40:00"
+          
+          // Parsear: dd/MM/yyyy HH:mm:ss
+          const [datePart, timePart] = startDateTime.split(' ');
+          const [day, month, year] = datePart.split('/').map(Number);
+          const [hours, minutes, seconds] = timePart.split(':').map(Number);
+          
+          // Crear fecha en UTC (ya viene en hora Argentina desde PRTG)
+          const utcDate = new Date(Date.UTC(year, month - 1, day, hours, minutes, seconds));
+          const timestamp_ms = utcDate.getTime();
+          
+          // Formatear para display
+          const dayStr = String(day).padStart(2, '0');
+          const monthStr = String(month).padStart(2, '0');
+          const hoursStr = String(hours).padStart(2, '0');
+          const minutesStr = String(minutes).padStart(2, '0');
+          
           return {
             ...point,
-            // Generar timestamp único en milisegundos para el eje X
-            timestamp_ms: point.datetime_raw * 1000,
-            // Hora formateada para tooltip y display
-            time: pointDate.toLocaleTimeString('es-AR', {
-              hour: '2-digit',
-              minute: '2-digit',
-              hour12: false
-            }),
-            date: pointDate.toLocaleDateString('es-AR', {
-              day: '2-digit',
-              month: '2-digit'
-            }),
-            // Agregar fecha completa para referencia
-            fullDateTime: pointDate.toLocaleString('es-AR', {
-              day: '2-digit',
-              month: '2-digit',
-              hour: '2-digit',
-              minute: '2-digit',
-              hour12: false
-            }),
+            // Timestamp Unix en milisegundos para el eje X
+            timestamp_ms: timestamp_ms,
+            // Hora formateada (HH:mm)
+            time: `${hoursStr}:${minutesStr}`,
+            // Fecha formateada (DD/MM)
+            date: `${dayStr}/${monthStr}`,
+            // Fecha completa (DD/MM HH:mm)
+            fullDateTime: `${dayStr}/${monthStr} ${hoursStr}:${minutesStr}`,
             valueInKbps: point.value.toFixed(2), // Valor en kbit/s original
             valueInMbps: (point.value / 1024).toFixed(2) // Convertir kbit/s a Mbit/s
           };
         });
 
         setData(formattedData);
+        setLastUpdate(new Date()); // Actualizar timestamp de última actualización
         writeCache(period, formattedData);
       } else {
         throw new Error(result.error || 'No se pudieron cargar los datos');
@@ -163,7 +183,57 @@ export default function HistoricalChart({
     return () => clearTimeout(timer);
   }, [sensorId, selectedPeriod]);
 
-  // 📊 Custom Tooltip para el gráfico
+  // 🔄 Auto-refresh cada 10 minutos (sincronizado con caché)
+  useEffect(() => {
+    // Mapeo de delays para el auto-refresh (más espaciados para evitar 429)
+    const sensorRefreshDelayMap: Record<string, number> = {
+      '13682': 0,      // CABASE - 0s
+      '13683': 10000,  // TECO - 10s
+      '13684': 20000,  // IPLAN - 20s
+      '2137': 30000,   // RDA - 30s
+      '13673': 40000   // RDB-DTV - 40s
+    };
+    
+    const delayMs = sensorRefreshDelayMap[sensorId] || 0;
+    
+    const refreshTimer = setInterval(() => {
+      // Solo refrescar si el caché expiró (checkeado dentro de fetchHistoricalData)
+      console.log(`🔄 Auto-refresh programado para ${sensorName} (delay ${delayMs/1000}s)`);
+      setTimeout(() => {
+        fetchHistoricalData(selectedPeriod);
+      }, delayMs);
+    }, REFRESH_INTERVAL_MS);
+    
+    return () => clearInterval(refreshTimer);
+  }, [sensorId, selectedPeriod]);
+
+  // ⏰ Actualizar tiempo relativo cada 30 segundos
+  useEffect(() => {
+    const formatRelative = (date: Date): string => {
+      const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
+      
+      if (seconds < 60) return `hace ${seconds} s`;
+      const minutes = Math.floor(seconds / 60);
+      if (minutes < 60) return `hace ${minutes} min`;
+      const hours = Math.floor(minutes / 60);
+      if (hours < 24) return `hace ${hours} h`;
+      const days = Math.floor(hours / 24);
+      return `hace ${days} d`;
+    };
+
+    const updateRelativeTime = () => {
+      if (lastUpdate) {
+        setRelativeTime(formatRelative(lastUpdate));
+      }
+    };
+
+    updateRelativeTime();
+    const timer = setInterval(updateRelativeTime, 30000); // Actualizar cada 30s
+    
+    return () => clearInterval(timer);
+  }, [lastUpdate]);
+
+  // �📊 Custom Tooltip para el gráfico
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
@@ -281,13 +351,11 @@ export default function HistoricalChart({
               textAnchor="end"
               height={80}
               tickFormatter={(timestamp) => {
-                // Convertir timestamp a hora legible
+                // timestamp ya viene en la zona horaria correcta (Argentina)
                 const date = new Date(timestamp);
-                return date.toLocaleTimeString('es-AR', {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                  hour12: false
-                });
+                const hours = String(date.getUTCHours()).padStart(2, '0');
+                const minutes = String(date.getUTCMinutes()).padStart(2, '0');
+                return `${hours}:${minutes}`;
               }}
             />
             <YAxis 
@@ -317,38 +385,57 @@ export default function HistoricalChart({
 
       {/* 📊 Estadísticas */}
       {!loading && !error && data.length > 0 && (
-        <div className="mt-4 grid grid-cols-3 gap-4">
-          <div className="bg-blue-50 rounded-lg p-3">
-            <p className="text-xs text-gray-600">Promedio</p>
-            <p className="text-lg font-bold text-blue-700">
-              {(() => {
-                const getValue = (d: any) => unit === 'mbit' ? parseFloat(d.valueInMbps) : parseFloat(d.valueInKbps);
-                const avg = data.reduce((acc, d: any) => acc + getValue(d), 0) / data.length;
-                return `${avg.toFixed(2)} ${unit === 'mbit' ? 'Mbit/s' : 'kbit/s'}`;
-              })()}
-            </p>
+        <>
+          <div className="mt-4 grid grid-cols-3 gap-4">
+            <div className="bg-blue-50 rounded-lg p-3">
+              <p className="text-xs text-gray-600">Promedio</p>
+              <p className="text-lg font-bold text-blue-700">
+                {(() => {
+                  const getValue = (d: any) => unit === 'mbit' ? parseFloat(d.valueInMbps) : parseFloat(d.valueInKbps);
+                  const avg = data.reduce((acc, d: any) => acc + getValue(d), 0) / data.length;
+                  return `${avg.toFixed(2)} ${unit === 'mbit' ? 'Mbit/s' : 'kbit/s'}`;
+                })()}
+              </p>
+            </div>
+            <div className="bg-green-50 rounded-lg p-3">
+              <p className="text-xs text-gray-600">Máximo</p>
+              <p className="text-lg font-bold text-green-700">
+                {(() => {
+                  const getValue = (d: any) => unit === 'mbit' ? parseFloat(d.valueInMbps) : parseFloat(d.valueInKbps);
+                  const max = Math.max(...data.map(getValue));
+                  return `${max.toFixed(2)} ${unit === 'mbit' ? 'Mbit/s' : 'kbit/s'}`;
+                })()}
+              </p>
+            </div>
+            <div className="bg-purple-50 rounded-lg p-3">
+              <p className="text-xs text-gray-600">Mínimo</p>
+              <p className="text-lg font-bold text-purple-700">
+                {(() => {
+                  const getValue = (d: any) => unit === 'mbit' ? parseFloat(d.valueInMbps) : parseFloat(d.valueInKbps);
+                  const min = Math.min(...data.map(getValue));
+                  return `${min.toFixed(2)} ${unit === 'mbit' ? 'Mbit/s' : 'kbit/s'}`;
+                })()}
+              </p>
+            </div>
           </div>
-          <div className="bg-green-50 rounded-lg p-3">
-            <p className="text-xs text-gray-600">Máximo</p>
-            <p className="text-lg font-bold text-green-700">
-              {(() => {
-                const getValue = (d: any) => unit === 'mbit' ? parseFloat(d.valueInMbps) : parseFloat(d.valueInKbps);
-                const max = Math.max(...data.map(getValue));
-                return `${max.toFixed(2)} ${unit === 'mbit' ? 'Mbit/s' : 'kbit/s'}`;
-              })()}
-            </p>
-          </div>
-          <div className="bg-purple-50 rounded-lg p-3">
-            <p className="text-xs text-gray-600">Mínimo</p>
-            <p className="text-lg font-bold text-purple-700">
-              {(() => {
-                const getValue = (d: any) => unit === 'mbit' ? parseFloat(d.valueInMbps) : parseFloat(d.valueInKbps);
-                const min = Math.min(...data.map(getValue));
-                return `${min.toFixed(2)} ${unit === 'mbit' ? 'Mbit/s' : 'kbit/s'}`;
-              })()}
-            </p>
-          </div>
-        </div>
+
+          {/* ⏰ Última actualización */}
+          {lastUpdate && (
+            <div className="mt-3 text-center">
+              <p className="text-xs text-gray-500">
+                Última actualización: {lastUpdate.toLocaleString('es-AR', {
+                  day: '2-digit',
+                  month: '2-digit',
+                  year: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  second: '2-digit',
+                  hour12: false
+                })} {relativeTime && `(${relativeTime})`}
+              </p>
+            </div>
+          )}
+        </>
       )}
 
       {/* 📭 Sin datos */}
