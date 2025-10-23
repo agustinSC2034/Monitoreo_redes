@@ -30,6 +30,9 @@ export default function SensorCard({
   lastCheck 
 }: SensorCardProps) {
   
+  // Estado para la unidad seleccionada
+  const [unit, setUnit] = useState<'kbit' | 'mbit'>('kbit');
+  
   // Tick para actualizar el relativo cada 30s
   const [now, setNow] = useState<Date>(new Date());
   useEffect(() => {
@@ -101,6 +104,22 @@ export default function SensorCard({
     return d ? formatRelative(d, now) : '';
   }, [absoluteLastCheck, now]);
 
+  // Convertir el valor según la unidad seleccionada
+  const displayValue = useMemo(() => {
+    // lastValue viene como "260.911 kbit/s" o similar
+    const match = lastValue.match(/([\d.,]+)\s*kbit\/s/i);
+    if (!match) return lastValue; // Si no matchea, devolver original
+    
+    const kbitValue = parseFloat(match[1].replace(/\./g, '').replace(',', '.'));
+    
+    if (unit === 'kbit') {
+      return `${kbitValue.toFixed(2)} kbit/s`;
+    } else {
+      const mbitValue = kbitValue / 1024;
+      return `${mbitValue.toFixed(2)} Mbit/s`;
+    }
+  }, [lastValue, unit]);
+
   return (
     <div className={`bg-white rounded-xl shadow-lg p-6 border-2 ${getBorderColor(statusRaw)} hover:shadow-xl transition-shadow duration-300`}>
       {/* Header con nombre y estado */}
@@ -112,10 +131,34 @@ export default function SensorCard({
       {/* Dispositivo */}
       <p className="text-sm text-gray-500 mb-3">{device}</p>
 
+      {/* Selector de unidad */}
+      <div className="flex gap-1.5 mb-3">
+        <button
+          onClick={() => setUnit('kbit')}
+          className={`px-3 py-1 rounded-lg text-xs font-medium transition-all ${
+            unit === 'kbit'
+              ? 'bg-green-600 text-white shadow-md'
+              : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+          }`}
+        >
+          kbit/s
+        </button>
+        <button
+          onClick={() => setUnit('mbit')}
+          className={`px-3 py-1 rounded-lg text-xs font-medium transition-all ${
+            unit === 'mbit'
+              ? 'bg-green-600 text-white shadow-md'
+              : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+          }`}
+        >
+          Mbit/s
+        </button>
+      </div>
+
       {/* Valor de tráfico (grande y destacado) */}
       <div className="mb-4">
         <p className="text-3xl font-bold text-gray-900 mb-1">
-          {lastValue}
+          {displayValue}
         </p>
         <p className="text-sm text-gray-600">{status}</p>
       </div>
