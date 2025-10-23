@@ -42,7 +42,7 @@ export default function HistoricalChart({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedPeriod, setSelectedPeriod] = useState(days);
-  const [unit, setUnit] = useState<'kbit' | 'mbit'>('mbit'); // Nueva: selector de unidad
+  const [unit, setUnit] = useState<'kbit' | 'mbit'>('kbit'); // CAMBIADO: arranca en kbit/s como PRTG
 
   // 🧠 Cache helpers
   const cacheKey = (period: number) => `historical:${sensorId}:${period}`;

@@ -30,13 +30,15 @@ export function formatDateForPRTG(date: Date): string {
  * Calcula automáticamente las fechas de inicio y fin
  * basándose en "cuántos días atrás" quieres consultar
  * 
- * @param days - Número de días hacia atrás (ej: 1 = últimas 24 horas)
+ * @param days - Número de días hacia atrás (ej: 1 = últimas 24 horas EXACTAS)
  * @returns Objeto con startDate y endDate en formato PRTG
  */
 export function getDateRange(days: number = 1) {
   const endDate = new Date();
   const startDate = new Date();
-  startDate.setDate(startDate.getDate() - days);
+  
+  // Restar días en HORAS para obtener el lapso exacto (ej: 24h, no desde 00:00)
+  startDate.setTime(startDate.getTime() - (days * 24 * 60 * 60 * 1000));
   
   return {
     startDate: formatDateForPRTG(startDate),
