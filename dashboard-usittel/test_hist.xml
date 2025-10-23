@@ -1,0 +1,436 @@
+<?xml version="1.0" encoding="UTF-8"?>
+  <histdata>
+   <prtg-version>13.1.2.1462</prtg-version>
+   <item>
+    <datetime>22/10/2025 00:00:00 - 01:00:00</datetime>
+    <datetime_raw>45952.1666666667</datetime_raw>
+    <value channel="Trafico suma (volumen)">2.919.332.577 KByte</value>
+    <value_raw channel="Trafico suma (volumen)">2989396559180.1528</value_raw>
+    <value channel="Trafico suma (velocidad)">6.641.628 kbit/s</value>
+    <value_raw channel="Trafico suma (velocidad)">830203443.4515</value_raw>
+    <value channel="Trafico in (volumen)">2.749.958.502 KByte</value>
+    <value_raw channel="Trafico in (volumen)">2815957505655.9697</value_raw>
+    <value channel="Trafico in (velocidad)">6.256.293 kbit/s</value>
+    <value_raw channel="Trafico in (velocidad)">782036632.3195</value_raw>
+    <value channel="Trafico out (volumen)">169.374.076 KByte</value>
+    <value_raw channel="Trafico out (volumen)">173439053524.1830</value_raw>
+    <value channel="Trafico out (velocidad)">385.334 kbit/s</value>
+    <value_raw channel="Trafico out (velocidad)">48166811.1320</value_raw>
+    <value channel="Errores in (volumen)">0 #</value>
+    <value_raw channel="Errores in (volumen)">0.0000</value_raw>
+    <value channel="Errores in (velocidad)">0 #/s</value>
+    <value_raw channel="Errores in (velocidad)">0.0000</value_raw>
+    <value channel="Errores out (volumen)">0 #</value>
+    <value_raw channel="Errores out (volumen)">0.0000</value_raw>
+    <value channel="Errores out (velocidad)">0 #/s</value>
+    <value_raw channel="Errores out (velocidad)">0.0000</value_raw>
+    <value channel="Discards in (volumen)">0 #</value>
+    <value_raw channel="Discards in (volumen)">0.0000</value_raw>
+    <value channel="Discards in (velocidad)">0 #/s</value>
+    <value_raw channel="Discards in (velocidad)">0.0000</value_raw>
+    <value channel="Discards out (volumen)">0 #</value>
+    <value_raw channel="Discards out (volumen)">0.0000</value_raw>
+    <value channel="Discards out (velocidad)">0 #/s</value>
+    <value_raw channel="Discards out (velocidad)">0.0000</value_raw>
+    <value channel="Downtime">0 %</value>
+    <value_raw channel="Downtime">0.0000</value_raw>
+    <coverage>100 %</coverage>
+    <coverage_raw>0000010000</coverage_raw>
+   </item>
+   <item>
+    <datetime>22/10/2025 01:00:00 - 02:00:00</datetime>
+    <datetime_raw>45952.2083333333</datetime_raw>
+    <value channel="Trafico suma (volumen)">3.209.834.336 KByte</value>
+    <value_raw channel="Trafico suma (volumen)">3286870360030.1016</value_raw>
+    <value channel="Trafico suma (velocidad)">7.304.725 kbit/s</value>
+    <value_raw channel="Trafico suma (velocidad)">913090562.6077</value_raw>
+    <value channel="Trafico in (volumen)">3.006.182.986 KByte</value>
+    <value_raw channel="Trafico in (volumen)">3078331377875.4131</value_raw>
+    <value channel="Trafico in (velocidad)">6.841.268 kbit/s</value>
+    <value_raw channel="Trafico in (velocidad)">855158561.7424</value_raw>
+    <value channel="Trafico out (volumen)">203.651.350 KByte</value>
+    <value_raw channel="Trafico out (volumen)">208538982154.6887</value_raw>
+    <value channel="Trafico out (velocidad)">463.456 kbit/s</value>
+    <value_raw channel="Trafico out (velocidad)">57932000.8653</value_raw>
+    <value channel="Errores in (volumen)">0 #</value>
+    <value_raw channel="Errores in (volumen)">0.0000</value_raw>
+    <value channel="Errores in (velocidad)">0 #/s</value>
+    <value_raw channel="Errores in (velocidad)">0.0000</value_raw>
+    <value channel="Errores out (volumen)">0 #</value>
+    <value_raw channel="Errores out (volumen)">0.0000</value_raw>
+    <value channel="Errores out (velocidad)">0 #/s</value>
+    <value_raw channel="Errores out (velocidad)">0.0000</value_raw>
+    <value channel="Discards in (volumen)">0 #</value>
+    <value_raw channel="Discards in (volumen)">0.0000</value_raw>
+    <value channel="Discards in (velocidad)">0 #/s</value>
+    <value_raw channel="Discards in (velocidad)">0.0000</value_raw>
+    <value channel="Discards out (volumen)">0 #</value>
+    <value_raw channel="Discards out (volumen)">0.0000</value_raw>
+    <value channel="Discards out (velocidad)">0 #/s</value>
+    <value_raw channel="Discards out (velocidad)">0.0000</value_raw>
+    <value channel="Downtime">0 %</value>
+    <value_raw channel="Downtime">0.0000</value_raw>
+    <coverage>100 %</coverage>
+    <coverage_raw>0000009999</coverage_raw>
+   </item>
+   <item>
+    <datetime>22/10/2025 02:00:00 - 03:00:00</datetime>
+    <datetime_raw>45952.2500000000</datetime_raw>
+    <value channel="Trafico suma (volumen)">2.597.244.845 KByte</value>
+    <value_raw channel="Trafico suma (volumen)">2659578720959.3569</value_raw>
+    <value channel="Trafico suma (velocidad)">5.910.635 kbit/s</value>
+    <value_raw channel="Trafico suma (velocidad)">738829331.4367</value_raw>
+    <value channel="Trafico in (volumen)">2.421.124.408 KByte</value>
+    <value_raw channel="Trafico in (volumen)">2479231394070.3594</value_raw>
+    <value channel="Trafico in (velocidad)">5.509.832 kbit/s</value>
+    <value_raw channel="Trafico in (velocidad)">688728955.0494</value_raw>
+    <value channel="Trafico out (volumen)">176.120.436 KByte</value>
+    <value_raw channel="Trafico out (volumen)">180347326888.9977</value_raw>
+    <value channel="Trafico out (velocidad)">400.803 kbit/s</value>
+    <value_raw channel="Trafico out (velocidad)">50100376.3873</value_raw>
+    <value channel="Errores in (volumen)">0 #</value>
+    <value_raw channel="Errores in (volumen)">0.0000</value_raw>
+    <value channel="Errores in (velocidad)">0 #/s</value>
+    <value_raw channel="Errores in (velocidad)">0.0000</value_raw>
+    <value channel="Errores out (volumen)">0 #</value>
+    <value_raw channel="Errores out (volumen)">0.0000</value_raw>
+    <value channel="Errores out (velocidad)">0 #/s</value>
+    <value_raw channel="Errores out (velocidad)">0.0000</value_raw>
+    <value channel="Discards in (volumen)">0 #</value>
+    <value_raw channel="Discards in (volumen)">0.0000</value_raw>
+    <value channel="Discards in (velocidad)">0 #/s</value>
+    <value_raw channel="Discards in (velocidad)">0.0000</value_raw>
+    <value channel="Discards out (volumen)">0 #</value>
+    <value_raw channel="Discards out (volumen)">0.0000</value_raw>
+    <value channel="Discards out (velocidad)">0 #/s</value>
+    <value_raw channel="Discards out (velocidad)">0.0000</value_raw>
+    <value channel="Downtime">0 %</value>
+    <value_raw channel="Downtime">0.0000</value_raw>
+    <coverage>100 %</coverage>
+    <coverage_raw>0000009999</coverage_raw>
+   </item>
+   <item>
+    <datetime>22/10/2025 03:00:00 - 04:00:00</datetime>
+    <datetime_raw>45952.2916666667</datetime_raw>
+    <value channel="Trafico suma (volumen)">1.644.763.833 KByte</value>
+    <value_raw channel="Trafico suma (volumen)">1684238165130.6765</value_raw>
+    <value channel="Trafico suma (velocidad)">3.742.991 kbit/s</value>
+    <value_raw channel="Trafico suma (velocidad)">467873826.6974</value_raw>
+    <value channel="Trafico in (volumen)">1.522.830.920 KByte</value>
+    <value_raw channel="Trafico in (volumen)">1559378861916.8372</value_raw>
+    <value channel="Trafico in (velocidad)">3.465.508 kbit/s</value>
+    <value_raw channel="Trafico in (velocidad)">433188470.9070</value_raw>
+    <value channel="Trafico out (volumen)">121.932.913 KByte</value>
+    <value_raw channel="Trafico out (volumen)">124859303213.8394</value_raw>
+    <value channel="Trafico out (velocidad)">277.483 kbit/s</value>
+    <value_raw channel="Trafico out (velocidad)">34685355.7905</value_raw>
+    <value channel="Errores in (volumen)">0 #</value>
+    <value_raw channel="Errores in (volumen)">0.0000</value_raw>
+    <value channel="Errores in (velocidad)">0 #/s</value>
+    <value_raw channel="Errores in (velocidad)">0.0000</value_raw>
+    <value channel="Errores out (volumen)">0 #</value>
+    <value_raw channel="Errores out (volumen)">0.0000</value_raw>
+    <value channel="Errores out (velocidad)">0 #/s</value>
+    <value_raw channel="Errores out (velocidad)">0.0000</value_raw>
+    <value channel="Discards in (volumen)">0 #</value>
+    <value_raw channel="Discards in (volumen)">0.0000</value_raw>
+    <value channel="Discards in (velocidad)">0 #/s</value>
+    <value_raw channel="Discards in (velocidad)">0.0000</value_raw>
+    <value channel="Discards out (volumen)">0 #</value>
+    <value_raw channel="Discards out (volumen)">0.0000</value_raw>
+    <value channel="Discards out (velocidad)">0 #/s</value>
+    <value_raw channel="Discards out (velocidad)">0.0000</value_raw>
+    <value channel="Downtime">0 %</value>
+    <value_raw channel="Downtime">0.0000</value_raw>
+    <coverage>100 %</coverage>
+    <coverage_raw>0000009999</coverage_raw>
+   </item>
+   <item>
+    <datetime>22/10/2025 04:00:00 - 05:00:00</datetime>
+    <datetime_raw>45952.3333333333</datetime_raw>
+    <value channel="Trafico suma (volumen)">1.084.673.635 KByte</value>
+    <value_raw channel="Trafico suma (volumen)">1110705802486.0481</value_raw>
+    <value channel="Trafico suma (velocidad)">2.468.400 kbit/s</value>
+    <value_raw channel="Trafico suma (velocidad)">308549959.5768</value_raw>
+    <value channel="Trafico in (volumen)">1.011.951.941 KByte</value>
+    <value_raw channel="Trafico in (volumen)">1036238787433.2328</value_raw>
+    <value channel="Trafico in (velocidad)">2.302.906 kbit/s</value>
+    <value_raw channel="Trafico in (velocidad)">287863298.5069</value_raw>
+    <value channel="Trafico out (volumen)">72.721.694 KByte</value>
+    <value_raw channel="Trafico out (volumen)">74467015052.8152</value_raw>
+    <value channel="Trafico out (velocidad)">165.493 kbit/s</value>
+    <value_raw channel="Trafico out (velocidad)">20686661.0699</value_raw>
+    <value channel="Errores in (volumen)">0 #</value>
+    <value_raw channel="Errores in (volumen)">0.0000</value_raw>
+    <value channel="Errores in (velocidad)">0 #/s</value>
+    <value_raw channel="Errores in (velocidad)">0.0000</value_raw>
+    <value channel="Errores out (volumen)">0 #</value>
+    <value_raw channel="Errores out (volumen)">0.0000</value_raw>
+    <value channel="Errores out (velocidad)">0 #/s</value>
+    <value_raw channel="Errores out (velocidad)">0.0000</value_raw>
+    <value channel="Discards in (volumen)">0 #</value>
+    <value_raw channel="Discards in (volumen)">0.0000</value_raw>
+    <value channel="Discards in (velocidad)">0 #/s</value>
+    <value_raw channel="Discards in (velocidad)">0.0000</value_raw>
+    <value channel="Discards out (volumen)">0 #</value>
+    <value_raw channel="Discards out (volumen)">0.0000</value_raw>
+    <value channel="Discards out (velocidad)">0 #/s</value>
+    <value_raw channel="Discards out (velocidad)">0.0000</value_raw>
+    <value channel="Downtime">0 %</value>
+    <value_raw channel="Downtime">0.0000</value_raw>
+    <coverage>100 %</coverage>
+    <coverage_raw>0000009999</coverage_raw>
+   </item>
+   <item>
+    <datetime>22/10/2025 05:00:00 - 06:00:00</datetime>
+    <datetime_raw>45952.3750000000</datetime_raw>
+    <value channel="Trafico suma (volumen)">681.150.458 KByte</value>
+    <value_raw channel="Trafico suma (volumen)">697498069317.3734</value_raw>
+    <value channel="Trafico suma (velocidad)">1.550.095 kbit/s</value>
+    <value_raw channel="Trafico suma (velocidad)">193761842.9281</value_raw>
+    <value channel="Trafico in (volumen)">630.637.379 KByte</value>
+    <value_raw channel="Trafico in (volumen)">645772675785.8658</value_raw>
+    <value channel="Trafico in (velocidad)">1.435.142 kbit/s</value>
+    <value_raw channel="Trafico in (velocidad)">179392760.0335</value_raw>
+    <value channel="Trafico out (volumen)">50.513.080 KByte</value>
+    <value_raw channel="Trafico out (volumen)">51725393531.5076</value_raw>
+    <value channel="Trafico out (velocidad)">114.953 kbit/s</value>
+    <value_raw channel="Trafico out (velocidad)">14369082.8946</value_raw>
+    <value channel="Errores in (volumen)">0 #</value>
+    <value_raw channel="Errores in (volumen)">0.0000</value_raw>
+    <value channel="Errores in (velocidad)">0 #/s</value>
+    <value_raw channel="Errores in (velocidad)">0.0000</value_raw>
+    <value channel="Errores out (volumen)">0 #</value>
+    <value_raw channel="Errores out (volumen)">0.0000</value_raw>
+    <value channel="Errores out (velocidad)">0 #/s</value>
+    <value_raw channel="Errores out (velocidad)">0.0000</value_raw>
+    <value channel="Discards in (volumen)">0 #</value>
+    <value_raw channel="Discards in (volumen)">0.0000</value_raw>
+    <value channel="Discards in (velocidad)">0 #/s</value>
+    <value_raw channel="Discards in (velocidad)">0.0000</value_raw>
+    <value channel="Discards out (volumen)">0 #</value>
+    <value_raw channel="Discards out (volumen)">0.0000</value_raw>
+    <value channel="Discards out (velocidad)">0 #/s</value>
+    <value_raw channel="Discards out (velocidad)">0.0000</value_raw>
+    <value channel="Downtime">0 %</value>
+    <value_raw channel="Downtime">0.0000</value_raw>
+    <coverage>100 %</coverage>
+    <coverage_raw>0000009999</coverage_raw>
+   </item>
+   <item>
+    <datetime>22/10/2025 06:00:00 - 07:00:00</datetime>
+    <datetime_raw>45952.4166666667</datetime_raw>
+    <value channel="Trafico suma (volumen)">466.836.500 KByte</value>
+    <value_raw channel="Trafico suma (volumen)">478040576466.8220</value_raw>
+    <value channel="Trafico suma (velocidad)">1.062.392 kbit/s</value>
+    <value_raw channel="Trafico suma (velocidad)">132799008.9442</value_raw>
+    <value channel="Trafico in (volumen)">418.870.988 KByte</value>
+    <value_raw channel="Trafico in (volumen)">428923891259.0225</value_raw>
+    <value channel="Trafico in (velocidad)">953.236 kbit/s</value>
+    <value_raw channel="Trafico in (velocidad)">119154461.9344</value_raw>
+    <value channel="Trafico out (volumen)">47.965.513 KByte</value>
+    <value_raw channel="Trafico out (volumen)">49116685207.7995</value_raw>
+    <value channel="Trafico out (velocidad)">109.156 kbit/s</value>
+    <value_raw channel="Trafico out (velocidad)">13644547.0099</value_raw>
+    <value channel="Errores in (volumen)">0 #</value>
+    <value_raw channel="Errores in (volumen)">0.0000</value_raw>
+    <value channel="Errores in (velocidad)">0 #/s</value>
+    <value_raw channel="Errores in (velocidad)">0.0000</value_raw>
+    <value channel="Errores out (volumen)">0 #</value>
+    <value_raw channel="Errores out (volumen)">0.0000</value_raw>
+    <value channel="Errores out (velocidad)">0 #/s</value>
+    <value_raw channel="Errores out (velocidad)">0.0000</value_raw>
+    <value channel="Discards in (volumen)">0 #</value>
+    <value_raw channel="Discards in (volumen)">0.0000</value_raw>
+    <value channel="Discards in (velocidad)">0 #/s</value>
+    <value_raw channel="Discards in (velocidad)">0.0000</value_raw>
+    <value channel="Discards out (volumen)">0 #</value>
+    <value_raw channel="Discards out (volumen)">0.0000</value_raw>
+    <value channel="Discards out (velocidad)">0 #/s</value>
+    <value_raw channel="Discards out (velocidad)">0.0000</value_raw>
+    <value channel="Downtime">0 %</value>
+    <value_raw channel="Downtime">0.0000</value_raw>
+    <coverage>100 %</coverage>
+    <coverage_raw>0000009999</coverage_raw>
+   </item>
+   <item>
+    <datetime>22/10/2025 07:00:00 - 08:00:00</datetime>
+    <datetime_raw>45952.4583333333</datetime_raw>
+    <value channel="Trafico suma (volumen)">375.352.448 KByte</value>
+    <value_raw channel="Trafico suma (volumen)">384360907035.0041</value_raw>
+    <value channel="Trafico suma (velocidad)">854.202 kbit/s</value>
+    <value_raw channel="Trafico suma (velocidad)">106775223.3604</value_raw>
+    <value channel="Trafico in (volumen)">336.626.971 KByte</value>
+    <value_raw channel="Trafico in (volumen)">344706018240.5165</value_raw>
+    <value channel="Trafico in (velocidad)">766.073 kbit/s</value>
+    <value_raw channel="Trafico in (velocidad)">95759119.6650</value_raw>
+    <value channel="Trafico out (volumen)">38.725.477 KByte</value>
+    <value_raw channel="Trafico out (volumen)">39654888794.4875</value_raw>
+    <value channel="Trafico out (velocidad)">88.129 kbit/s</value>
+    <value_raw channel="Trafico out (velocidad)">11016103.6954</value_raw>
+    <value channel="Errores in (volumen)">0 #</value>
+    <value_raw channel="Errores in (volumen)">0.0000</value_raw>
+    <value channel="Errores in (velocidad)">0 #/s</value>
+    <value_raw channel="Errores in (velocidad)">0.0000</value_raw>
+    <value channel="Errores out (volumen)">0 #</value>
+    <value_raw channel="Errores out (volumen)">0.0000</value_raw>
+    <value channel="Errores out (velocidad)">0 #/s</value>
+    <value_raw channel="Errores out (velocidad)">0.0000</value_raw>
+    <value channel="Discards in (volumen)">0 #</value>
+    <value_raw channel="Discards in (volumen)">0.0000</value_raw>
+    <value channel="Discards in (velocidad)">0 #/s</value>
+    <value_raw channel="Discards in (velocidad)">0.0000</value_raw>
+    <value channel="Discards out (volumen)">0 #</value>
+    <value_raw channel="Discards out (volumen)">0.0000</value_raw>
+    <value channel="Discards out (velocidad)">0 #/s</value>
+    <value_raw channel="Discards out (velocidad)">0.0000</value_raw>
+    <value channel="Downtime">0 %</value>
+    <value_raw channel="Downtime">0.0000</value_raw>
+    <coverage>100 %</coverage>
+    <coverage_raw>0000009999</coverage_raw>
+   </item>
+   <item>
+    <datetime>22/10/2025 08:00:00 - 09:00:00</datetime>
+    <datetime_raw>45952.5000000000</datetime_raw>
+    <value channel="Trafico suma (volumen)">374.578.035 KByte</value>
+    <value_raw channel="Trafico suma (volumen)">383567908190.9376</value_raw>
+    <value channel="Trafico suma (velocidad)">852.428 kbit/s</value>
+    <value_raw channel="Trafico suma (velocidad)">106553448.7456</value_raw>
+    <value channel="Trafico in (volumen)">336.008.553 KByte</value>
+    <value_raw channel="Trafico in (volumen)">344072757765.3542</value_raw>
+    <value channel="Trafico in (velocidad)">764.655 kbit/s</value>
+    <value_raw channel="Trafico in (velocidad)">95581872.6656</value_raw>
+    <value channel="Trafico out (volumen)">38.569.483 KByte</value>
+    <value_raw channel="Trafico out (volumen)">39495150425.5834</value_raw>
+    <value channel="Trafico out (velocidad)">87.773 kbit/s</value>
+    <value_raw channel="Trafico out (velocidad)">10971576.0800</value_raw>
+    <value channel="Errores in (volumen)">0 #</value>
+    <value_raw channel="Errores in (volumen)">0.0000</value_raw>
+    <value channel="Errores in (velocidad)">0 #/s</value>
+    <value_raw channel="Errores in (velocidad)">0.0000</value_raw>
+    <value channel="Errores out (volumen)">0 #</value>
+    <value_raw channel="Errores out (volumen)">0.0000</value_raw>
+    <value channel="Errores out (velocidad)">0 #/s</value>
+    <value_raw channel="Errores out (velocidad)">0.0000</value_raw>
+    <value channel="Discards in (volumen)">0 #</value>
+    <value_raw channel="Discards in (volumen)">0.0000</value_raw>
+    <value channel="Discards in (velocidad)">0 #/s</value>
+    <value_raw channel="Discards in (velocidad)">0.0000</value_raw>
+    <value channel="Discards out (volumen)">0 #</value>
+    <value_raw channel="Discards out (volumen)">0.0000</value_raw>
+    <value channel="Discards out (velocidad)">0 #/s</value>
+    <value_raw channel="Discards out (velocidad)">0.0000</value_raw>
+    <value channel="Downtime">0 %</value>
+    <value_raw channel="Downtime">0.0000</value_raw>
+    <coverage>100 %</coverage>
+    <coverage_raw>0000009999</coverage_raw>
+   </item>
+   <item>
+    <datetime>22/10/2025 09:00:00 - 10:00:00</datetime>
+    <datetime_raw>45952.5416666667</datetime_raw>
+    <value channel="Trafico suma (volumen)">559.505.834 KByte</value>
+    <value_raw channel="Trafico suma (volumen)">572933973718.6558</value_raw>
+    <value channel="Trafico suma (velocidad)">1.273.275 kbit/s</value>
+    <value_raw channel="Trafico suma (velocidad)">159159378.7676</value_raw>
+    <value channel="Trafico in (volumen)">520.827.583 KByte</value>
+    <value_raw channel="Trafico in (volumen)">533327445123.0487</value_raw>
+    <value channel="Trafico in (velocidad)">1.185.254 kbit/s</value>
+    <value_raw channel="Trafico in (velocidad)">148156801.2009</value_raw>
+    <value channel="Trafico out (volumen)">38.678.251 KByte</value>
+    <value_raw channel="Trafico out (volumen)">39606528595.6071</value_raw>
+    <value channel="Trafico out (velocidad)">88.021 kbit/s</value>
+    <value_raw channel="Trafico out (velocidad)">11002577.5667</value_raw>
+    <value channel="Errores in (volumen)">0 #</value>
+    <value_raw channel="Errores in (volumen)">0.0000</value_raw>
+    <value channel="Errores in (velocidad)">0 #/s</value>
+    <value_raw channel="Errores in (velocidad)">0.0000</value_raw>
+    <value channel="Errores out (volumen)">0 #</value>
+    <value_raw channel="Errores out (volumen)">0.0000</value_raw>
+    <value channel="Errores out (velocidad)">0 #/s</value>
+    <value_raw channel="Errores out (velocidad)">0.0000</value_raw>
+    <value channel="Discards in (volumen)">0 #</value>
+    <value_raw channel="Discards in (volumen)">0.0000</value_raw>
+    <value channel="Discards in (velocidad)">0 #/s</value>
+    <value_raw channel="Discards in (velocidad)">0.0000</value_raw>
+    <value channel="Discards out (volumen)">0 #</value>
+    <value_raw channel="Discards out (volumen)">0.0000</value_raw>
+    <value channel="Discards out (velocidad)">0 #/s</value>
+    <value_raw channel="Discards out (velocidad)">0.0000</value_raw>
+    <value channel="Downtime">0 %</value>
+    <value_raw channel="Downtime">0.0000</value_raw>
+    <coverage>100 %</coverage>
+    <coverage_raw>0000009999</coverage_raw>
+   </item>
+   <item>
+    <datetime>22/10/2025 10:00:00 - 11:00:00</datetime>
+    <datetime_raw>45952.5833333333</datetime_raw>
+    <value channel="Trafico suma (volumen)">913.966.799 KByte</value>
+    <value_raw channel="Trafico suma (volumen)">935902001862.0355</value_raw>
+    <value channel="Trafico suma (velocidad)">2.079.927 kbit/s</value>
+    <value_raw channel="Trafico suma (velocidad)">259990833.2140</value_raw>
+    <value channel="Trafico in (volumen)">856.492.367 KByte</value>
+    <value_raw channel="Trafico in (volumen)">877048184238.8645</value_raw>
+    <value channel="Trafico in (velocidad)">1.949.131 kbit/s</value>
+    <value_raw channel="Trafico in (velocidad)">243641415.1646</value_raw>
+    <value channel="Trafico out (volumen)">57.474.431 KByte</value>
+    <value_raw channel="Trafico out (volumen)">58853817623.1710</value_raw>
+    <value channel="Trafico out (velocidad)">130.795 kbit/s</value>
+    <value_raw channel="Trafico out (velocidad)">16349418.0494</value_raw>
+    <value channel="Errores in (volumen)">0 #</value>
+    <value_raw channel="Errores in (volumen)">0.0000</value_raw>
+    <value channel="Errores in (velocidad)">0 #/s</value>
+    <value_raw channel="Errores in (velocidad)">0.0000</value_raw>
+    <value channel="Errores out (volumen)">0 #</value>
+    <value_raw channel="Errores out (volumen)">0.0000</value_raw>
+    <value channel="Errores out (velocidad)">0 #/s</value>
+    <value_raw channel="Errores out (velocidad)">0.0000</value_raw>
+    <value channel="Discards in (volumen)">0 #</value>
+    <value_raw channel="Discards in (volumen)">0.0000</value_raw>
+    <value channel="Discards in (velocidad)">0 #/s</value>
+    <value_raw channel="Discards in (velocidad)">0.0000</value_raw>
+    <value channel="Discards out (volumen)">0 #</value>
+    <value_raw channel="Discards out (volumen)">0.0000</value_raw>
+    <value channel="Discards out (velocidad)">0 #/s</value>
+    <value_raw channel="Discards out (velocidad)">0.0000</value_raw>
+    <value channel="Downtime">0 %</value>
+    <value_raw channel="Downtime">0.0000</value_raw>
+    <coverage>100 %</coverage>
+    <coverage_raw>0000009999</coverage_raw>
+   </item>
+   <item>
+    <datetime>22/10/2025 11:00:00 - 12:00:00</datetime>
+    <datetime_raw>45952.6250000000</datetime_raw>
+    <value channel="Trafico suma (volumen)">1.239.126.589 KByte</value>
+    <value_raw channel="Trafico suma (volumen)">1268865626965.8357</value_raw>
+    <value channel="Trafico suma (velocidad)">2.820.696 kbit/s</value>
+    <value_raw channel="Trafico suma (velocidad)">352587059.0363</value_raw>
+    <value channel="Trafico in (volumen)">1.154.261.058 KByte</value>
+    <value_raw channel="Trafico in (volumen)">1181963323861.5156</value_raw>
+    <value channel="Trafico in (velocidad)">2.627.512 kbit/s</value>
+    <value_raw channel="Trafico in (velocidad)">328439011.5017</value_raw>
+    <value channel="Trafico out (volumen)">84.865.530 KByte</value>
+    <value_raw channel="Trafico out (volumen)">86902303104.3200</value_raw>
+    <value channel="Trafico out (velocidad)">193.184 kbit/s</value>
+    <value_raw channel="Trafico out (velocidad)">24148047.5346</value_raw>
+    <value channel="Errores in (volumen)">0 #</value>
+    <value_raw channel="Errores in (volumen)">0.0000</value_raw>
+    <value channel="Errores in (velocidad)">0 #/s</value>
+    <value_raw channel="Errores in (velocidad)">0.0000</value_raw>
+    <value channel="Errores out (volumen)">0 #</value>
+    <value_raw channel="Errores out (volumen)">0.0000</value_raw>
+    <value channel="Errores out (velocidad)">0 #/s</value>
+    <value_raw channel="Errores out (velocidad)">0.0000</value_raw>
+    <value channel="Discards in (volumen)">0 #</value>
+    <value_raw channel="Discards in (volumen)">0.0000</value_raw>
+    <value channel="Discards in (velocidad)">0 #/s</value>
+    <value_raw channel="Discards in (velocidad)">0.0000</value_raw>
+    <value channel="Discards out (volumen)">0 #</value>
+    <value_raw channel="Discards out (volumen)">0.0000</value_raw>
+    <value channel="Discards out (velocidad)">0 #/s</value>
+    <value_raw channel="Discards out (velocidad)">0.0000</value_raw>
+    <value channel="Downtime">0 %</value>
+    <value_raw channel="Downtime">0.0000</value_raw>
+    <coverage>100 %</coverage>
+    <coverage_raw>0000009996</coverage_raw>
+   </item>
+  </histdata>
