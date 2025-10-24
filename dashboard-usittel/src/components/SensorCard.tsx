@@ -106,16 +106,19 @@ export default function SensorCard({
 
   // Convertir el valor según la unidad seleccionada
   const displayValue = useMemo(() => {
-    // lastValue viene como "260.911 kbit/s" o similar
+    // lastValue viene como "4.730.793 kbit/s" (formato europeo con puntos como separador de miles)
     const match = lastValue.match(/([\d.,]+)\s*kbit\/s/i);
     if (!match) return lastValue; // Si no matchea, devolver original
     
-    const kbitValue = parseFloat(match[1].replace(/\./g, '').replace(',', '.'));
+    // Remover puntos (separadores de miles) y cambiar coma por punto (decimal)
+    let numStr = match[1].replace(/\./g, '').replace(',', '.');
+    const kbitValue = parseFloat(numStr);
     
     if (unit === 'kbit') {
       return `${kbitValue.toFixed(2)} kbit/s`;
     } else {
-      const mbitValue = kbitValue / 1024;
+      // 1 Mbit = 1000 kbit (no 1024)
+      const mbitValue = kbitValue / 1000;
       return `${mbitValue.toFixed(2)} Mbit/s`;
     }
   }, [lastValue, unit]);

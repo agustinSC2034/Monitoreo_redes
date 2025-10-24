@@ -14,6 +14,7 @@
 
 import { useEffect, useState } from 'react';
 
+import { ChartProvider } from '@/context/ChartContext';
 import HistoricalChart from '@/components/HistoricalChart';
 import MapView from '@/components/MapView';
 import SensorCard from '@/components/SensorCard';
@@ -92,7 +93,8 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <ChartProvider>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       {/* 🎨 Header */}
       <header className="bg-white shadow-md">
         <div className="container mx-auto px-4 py-6">
@@ -200,7 +202,7 @@ export default function Home() {
                       key={sensor.id}
                       sensorId={sensor.id}
                       sensorName={sensor.name}
-                      days={1}
+                      days={0.0833}
                     />
                   ))}
                 </div>
@@ -221,5 +223,6 @@ export default function Home() {
         </div>
       </footer>
     </div>
+    </ChartProvider>
   );
 }

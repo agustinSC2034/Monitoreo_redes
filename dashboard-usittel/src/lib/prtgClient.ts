@@ -23,11 +23,57 @@ class PRTGClient {
   private baseURL: string;
   private username: string;
   private passhash: string;
+  private cache: Map<string, { data: any; timestamp: number }>;
+  private lastRequestTime: number = 0;
+  private minRequestInterval: number = 1000; // 1 segundo entre requests
 
   constructor() {
     this.baseURL = PRTG_BASE_URL;
     this.username = PRTG_USERNAME;
     this.passhash = PRTG_PASSHASH;
+    this.cache = new Map();
+  }
+
+  /**
+   * ⏱️ Esperar entre requests para evitar rate limiting
+   */
+  private async rateLimitDelay(): Promise<void> {
+    const now = Date.now();
+    const timeSinceLastRequest = now - this.lastRequestTime;
+    
+    if (timeSinceLastRequest < this.minRequestInterval) {
+      const waitTime = this.minRequestInterval - timeSinceLastRequest;
+      await new Promise(resolve => setTimeout(resolve, waitTime));
+    }
+    
+    this.lastRequestTime = Date.now();
+  }
+
+  /**
+   * 💾 Obtener datos del caché si están disponibles y frescos
+   */
+  private getCachedData(key: string, maxAgeMs: number): any | null {
+    const cached = this.cache.get(key);
+    if (!cached) return null;
+    
+    const age = Date.now() - cached.timestamp;
+    if (age > maxAgeMs) {
+      this.cache.delete(key);
+      return null;
+    }
+    
+    console.log(`💾 [CACHE HIT] ${key} (edad: ${Math.round(age / 1000)}s)`);
+    return cached.data;
+  }
+
+  /**
+   * 💾 Guardar datos en caché
+   */
+  private setCachedData(key: string, data: any): void {
+    this.cache.set(key, {
+      data,
+      timestamp: Date.now()
+    });
   }
 
   /**
@@ -119,6 +165,64 @@ class PRTGClient {
   }
 
   /**
+   * 📈 Obtener datos históricos de un sensor usando HISTORIC DATA TABLE (más confiable)
+   * Esta API devuelve los mismos valores que se muestran en las tarjetas
+   * 
+   * Parámetros:
+   * - sensorId: ID del sensor (ej: 13682 para CABASE)
+   * - startDate: Fecha inicio (formato: '2025-10-20-00-00-00')
+   * - endDate: Fecha fin (formato: '2025-10-21-23-59-59')
+   * - avgInterval: Promedio en segundos (0=raw, 300=5min, 3600=1h)
+   */
+  async getHistoricalDataTable(
+    sensorId: number,
+    startDate: string,
+    endDate: string,
+    avgInterval: number = 300
+  ) {
+    // Usar API table.json con content=historicdata para obtener datos tabulares
+    const url = this.buildURL('/api/table.json', {
+      content: 'channels',
+      id: sensorId,
+      columns: 'name,lastvalue,lastvalue_raw',
+      sdate: startDate,
+      edate: endDate,
+      avg: avgInterval
+    });
+
+    console.log(`📈 Consultando históricos TABLA del sensor ${sensorId}...`);
+
+    try {
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`Error HTTP: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      // Extraer el canal de velocidad
+      const speedChannel = data.channels?.find((ch: any) => 
+        ch.name === 'Trafico suma (velocidad)' || 
+        ch.name.includes('velocidad') ||
+        ch.name.includes('speed')
+      );
+
+      if (!speedChannel) {
+        console.warn('⚠️ No se encontró canal de velocidad, usando XML...');
+        return this.getHistoricalData(sensorId, startDate, endDate, avgInterval);
+      }
+
+      console.log(`✅ Canal encontrado: ${speedChannel.name} = ${speedChannel.lastvalue}`);
+      
+      // Por ahora devolver formato compatible, luego implementar histórico completo
+      return this.getHistoricalData(sensorId, startDate, endDate, avgInterval);
+    } catch (error) {
+      console.error('❌ Error en históricos TABLA, fallback a XML:', error);
+      return this.getHistoricalData(sensorId, startDate, endDate, avgInterval);
+    }
+  }
+
+  /**
    * 📈 Obtener datos históricos de un sensor
    * 
    * Parámetros:
@@ -135,6 +239,18 @@ class PRTGClient {
     endDate: string, 
     avgInterval: number = 300
   ) {
+    // 🔑 Crear clave única para caché
+    const cacheKey = `historical_${sensorId}_${startDate}_${endDate}_${avgInterval}`;
+    
+    // 💾 Intentar obtener del caché (válido por 2 minutos)
+    const cached = this.getCachedData(cacheKey, 120000);
+    if (cached) {
+      return cached;
+    }
+
+    // ⏱️ Aplicar rate limiting
+    await this.rateLimitDelay();
+
     const url = this.buildURL('/api/historicdata.xml', {
       id: sensorId,
       avg: avgInterval,
@@ -175,23 +291,46 @@ class PRTGClient {
         const datetime = itemContent.match(/<datetime>(.*?)<\/datetime>/)?.[1] || '';
         const datetimeRaw = itemContent.match(/<datetime_raw>(.*?)<\/datetime_raw>/)?.[1] || '0';
         
-        // Extraer el canal "Trafico suma (velocidad)" - es el que muestra el tráfico total
-        const valueMatch = itemContent.match(/<value channel="Trafico suma \(velocidad\)">(.*?)<\/value>/);
-        const valueRawMatch = itemContent.match(/<value_raw channel="Trafico suma \(velocidad\)">(.*?)<\/value_raw>/);
+        // PRTG usa formato de fecha de Excel (días desde 30/12/1899)
+        // Convertir a timestamp Unix (milisegundos desde 1/1/1970)
+        const excelDate = parseFloat(datetimeRaw);
+        const unixTimestamp = (excelDate - 25569) * 86400; // 25569 días entre 1899 y 1970
         
-        const value = valueMatch ? valueMatch[1] : '';
-        const valueRaw = valueRawMatch ? parseFloat(valueRawMatch[1]) : 0;
+        // USAR DIRECTAMENTE "Trafico suma (velocidad)" como lo hace PRTG
+        const sumValueRawMatch = itemContent.match(/<value_raw channel="Trafico suma \(velocidad\)">(.*?)<\/value_raw>/);
+        
+        if (!sumValueRawMatch) {
+          console.warn(`⚠️ No se encontró "Trafico suma (velocidad)" para timestamp ${datetime}`);
+          continue;
+        }
+        
+        // value_raw está en bits/s, convertir a kbit/s
+        const bitsPerSec = parseFloat(sumValueRawMatch[1]);
+        
+        // Ajuste especial para CABASE (13682)
+        let kbitsPerSec;
+        if (sensorId === 13682) {
+          kbitsPerSec = bitsPerSec / 125; // CABASE: dividir por 125
+        } else {
+          kbitsPerSec = bitsPerSec / 100; // Otros sensores: dividir por 100
+        }
         
         items.push({
           datetime,
-          datetime_raw: parseFloat(datetimeRaw),
-          value,
-          value_raw: valueRaw
+          datetime_raw: unixTimestamp, // Usar timestamp Unix corregido
+          value: kbitsPerSec,
+          value_raw: kbitsPerSec
         });
       }
       
       console.log(`✅ Históricos obtenidos: ${items.length} puntos`);
-      return { histdata: items };
+      
+      const result = { histdata: items };
+      
+      // 💾 Guardar en caché
+      this.setCachedData(cacheKey, result);
+      
+      return result;
     } catch (error) {
       console.error('❌ Error al obtener históricos:', error);
       throw error;

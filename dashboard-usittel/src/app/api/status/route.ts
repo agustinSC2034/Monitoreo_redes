@@ -77,6 +77,11 @@ export async function GET() {
         priority: sensor.priority || 3
       };
     });
+
+    // Log de debugging para ver los lastValue
+    processedData.forEach((sensor: any) => {
+      console.log(`📊 [DEBUG] ${sensor.name}: lastValue="${sensor.lastValue}"`);
+    });
     
     // 3️⃣ Devolver respuesta exitosa
     console.log('✅ [API] /api/status - Datos obtenidos correctamente');
