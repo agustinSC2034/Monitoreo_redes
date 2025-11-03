@@ -31,7 +31,7 @@ export default function SensorCard({
 }: SensorCardProps) {
   
   // Estado para la unidad seleccionada
-  const [unit, setUnit] = useState<'kbit' | 'mbit'>('kbit');
+  const [unit, setUnit] = useState<'kbit' | 'mbit'>('mbit');
   
   // Tick para actualizar el relativo cada 30s
   const [now, setNow] = useState<Date>(new Date());
