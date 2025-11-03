@@ -9,4 +9,8 @@ No se cual es la forma mas simple de hacerlo asi que escucho tus opciones y si n
 Para las alertas dijeron whatsapp pero podria ser mail si es mas facil, o ambas cosas no lo se.
 Empezariamos primero con el PRTG de tandil.
 
+Tambien tengo acceso a una api de prtg por si esa manera es mejor, está en PRTG\info_api.md
+
+vercel es una buena forma de hacerlo? 
+
 Soy todo oidos. entendiste lo que etamos requiriendo hacer? es la mejor manera?
