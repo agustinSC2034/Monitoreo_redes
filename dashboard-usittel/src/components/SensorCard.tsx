@@ -19,6 +19,7 @@ interface SensorCardProps {
   lastValue: string;
   lastCheck: string;
   message: string;
+  theme?: 'light' | 'dark';
 }
 
 export default function SensorCard({ 
@@ -27,7 +28,8 @@ export default function SensorCard({
   status, 
   statusRaw, 
   lastValue, 
-  lastCheck 
+  lastCheck,
+  theme = 'light'
 }: SensorCardProps) {
   
   // Estado para la unidad seleccionada
@@ -71,12 +73,12 @@ export default function SensorCard({
     return cleaned;
   };
 
-  // Parsear dd/MM/yyyy HH:mm:ss a Date local
+  // Parsear dd/MM/yyyy HH:mm:ss a Date local y restar 3 horas
   const parseArgDate = (s: string): Date | null => {
     const m = s.match(/(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2}):(\d{2})/);
     if (!m) return null;
     const [, dd, mm, yyyy, HH, MM, SS] = m;
-    return new Date(
+    const date = new Date(
       parseInt(yyyy),
       parseInt(mm) - 1,
       parseInt(dd),
@@ -84,6 +86,20 @@ export default function SensorCard({
       parseInt(MM),
       parseInt(SS)
     );
+    // Restar 3 horas para ajustar zona horaria
+    date.setHours(date.getHours() - 3);
+    return date;
+  };
+
+  // Formatear fecha ajustada para display
+  const formatDisplayDate = (d: Date): string => {
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+    const hours = String(d.getHours()).padStart(2, '0');
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    const seconds = String(d.getSeconds()).padStart(2, '0');
+    return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
   };
 
   // Formatear relativo "hace X"
@@ -98,11 +114,17 @@ export default function SensorCard({
     return `hace ${diffDay} d`;
   };
 
-  const absoluteLastCheck = useMemo(() => cleanLastCheck(lastCheck), [lastCheck]);
+  const absoluteLastCheck = useMemo(() => {
+    const cleaned = cleanLastCheck(lastCheck);
+    const d = parseArgDate(cleaned);
+    return d ? formatDisplayDate(d) : cleaned;
+  }, [lastCheck]);
+  
   const relativeLastCheck = useMemo(() => {
-    const d = parseArgDate(absoluteLastCheck);
+    const cleaned = cleanLastCheck(lastCheck);
+    const d = parseArgDate(cleaned);
     return d ? formatRelative(d, now) : '';
-  }, [absoluteLastCheck, now]);
+  }, [lastCheck, now]);
 
   // Convertir el valor según la unidad seleccionada
   const displayValue = useMemo(() => {
@@ -124,15 +146,23 @@ export default function SensorCard({
   }, [lastValue, unit]);
 
   return (
-    <div className={`bg-white rounded-xl shadow-lg p-6 border-2 ${getBorderColor(statusRaw)} hover:shadow-xl transition-shadow duration-300`}>
+    <div className={`rounded-xl shadow-lg p-6 border-2 hover:shadow-xl transition-all duration-300 ${
+      getBorderColor(statusRaw)
+    } ${
+      theme === 'light' ? 'bg-white' : 'bg-gray-800'
+    }`}>
       {/* Header con nombre y estado */}
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-xl font-bold text-gray-800">{name}</h3>
+        <h3 className={`text-xl font-bold transition-colors duration-300 ${
+          theme === 'light' ? 'text-gray-800' : 'text-gray-100'
+        }`}>{name}</h3>
         <div className={`w-4 h-4 rounded-full ${getStatusColor(statusRaw)} animate-pulse`} />
       </div>
 
       {/* Dispositivo */}
-      <p className="text-sm text-gray-500 mb-3">{device}</p>
+      <p className={`text-sm mb-3 transition-colors duration-300 ${
+        theme === 'light' ? 'text-gray-500' : 'text-gray-400'
+      }`}>{device}</p>
 
       {/* Selector de unidad */}
       <div className="flex gap-1.5 mb-3">
@@ -141,7 +171,9 @@ export default function SensorCard({
           className={`px-3 py-1 rounded-lg text-xs font-medium transition-all ${
             unit === 'kbit'
               ? 'bg-green-600 text-white shadow-md'
-              : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+              : theme === 'light'
+                ? 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+                : 'bg-gray-700 text-gray-300 hover:bg-gray-600 border border-gray-600'
           }`}
         >
           kbit/s
@@ -151,7 +183,9 @@ export default function SensorCard({
           className={`px-3 py-1 rounded-lg text-xs font-medium transition-all ${
             unit === 'mbit'
               ? 'bg-green-600 text-white shadow-md'
-              : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+              : theme === 'light'
+                ? 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+                : 'bg-gray-700 text-gray-300 hover:bg-gray-600 border border-gray-600'
           }`}
         >
           Mbit/s
@@ -160,15 +194,23 @@ export default function SensorCard({
 
       {/* Valor de tráfico (grande y destacado) */}
       <div className="mb-4">
-        <p className="text-3xl font-bold text-gray-900 mb-1">
+        <p className={`text-3xl font-bold mb-1 transition-colors duration-300 ${
+          theme === 'light' ? 'text-gray-900' : 'text-gray-100'
+        }`}>
           {displayValue}
         </p>
-        <p className="text-sm text-gray-600">{status}</p>
+        <p className={`text-sm transition-colors duration-300 ${
+          theme === 'light' ? 'text-gray-600' : 'text-gray-400'
+        }`}>{status}</p>
       </div>
 
       {/* Última actualización */}
-      <div className="border-t border-gray-200 pt-3">
-        <p className="text-xs text-gray-500">
+      <div className={`border-t pt-3 transition-colors duration-300 ${
+        theme === 'light' ? 'border-gray-200' : 'border-gray-700'
+      }`}>
+        <p className={`text-xs transition-colors duration-300 ${
+          theme === 'light' ? 'text-gray-500' : 'text-gray-400'
+        }`}>
           Última actualización: {absoluteLastCheck}
           {relativeLastCheck ? ` (${relativeLastCheck})` : ''}
         </p>

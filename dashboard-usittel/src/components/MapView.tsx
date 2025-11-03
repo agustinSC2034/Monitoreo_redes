@@ -15,19 +15,28 @@ export default function MapView({ sensors }: MapViewProps) {
   const PRTG_MAP_URL = 'http://38.253.65.250:8080/public/mapshow.htm?id=2197&mapid=7418EC41-A903-47CF-87A2-70E6CC8AAFF5';
 
   return (
-    <div className="w-full h-full bg-gradient-to-br from-gray-50 to-blue-50 relative -mx-4 px-0">
-      {/* Iframe con el mapa de PRTG original - Ancho completo */}
-      <iframe
-        src={PRTG_MAP_URL}
-        className="w-full h-full border-0"
-        title="Mapa de Red PRTG - Grupo ITTEL Tandil"
-        sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
-        loading="eager"
-      />
-      
-      {/* Indicador de carga opcional */}
-      <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur-sm px-6 py-2 rounded-full shadow-lg border border-gray-200 z-10 pointer-events-none">
-        <p className="text-sm text-gray-600">🗺️ Mapa PRTG en vivo - Grupo ITTEL Tandil</p>
+    <div className="w-full h-full px-4">
+      {/* Contenedor con bordes redondeados y sombra */}
+      <div className="relative h-full bg-white rounded-2xl shadow-2xl overflow-hidden border border-gray-200">
+        {/* Iframe con el mapa de PRTG original */}
+        <iframe
+          src={PRTG_MAP_URL}
+          className="w-full h-full border-0"
+          title="Mapa de Red PRTG - Grupo ITTEL Tandil"
+          sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+          loading="eager"
+        />
+        
+        {/* Header decorativo opcional */}
+        <div className="absolute top-0 left-0 right-0 bg-gradient-to-b from-white/95 via-white/80 to-transparent backdrop-blur-sm px-6 py-3 z-10 pointer-events-none">
+          <div className="flex items-center gap-2">
+            <span className="text-2xl">🗺️</span>
+            <div>
+              <p className="text-sm font-semibold text-gray-800">Mapa de Red PRTG</p>
+              <p className="text-xs text-gray-600">Grupo ITTEL Tandil - En vivo</p>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
