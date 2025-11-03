@@ -14,8 +14,6 @@
 
 import { useEffect, useState } from 'react';
 
-import { ChartProvider } from '@/context/ChartContext';
-import HistoricalChart from '@/components/HistoricalChart';
 import MapView from '@/components/MapView';
 import SensorCard from '@/components/SensorCard';
 
@@ -93,8 +91,7 @@ export default function Home() {
   }, []);
 
   return (
-    <ChartProvider>
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       {/* 🎨 Header */}
       <header className="bg-white shadow-md">
         <div className="container mx-auto px-4 py-6">
@@ -185,8 +182,8 @@ export default function Home() {
             {/* 📊 VISTA DETALLE (tarjetas + gráficos) */}
             {viewMode === 'cards' && (
               <>
-                {/* Tarjetas de sensores - 3 columnas */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                {/* Tarjetas de sensores - Layout en 5 columnas */}
+                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-8">
                   {sensors.map((sensor) => (
                     <SensorCard 
                       key={sensor.id}
@@ -195,16 +192,31 @@ export default function Home() {
                   ))}
                 </div>
 
-                {/* 📈 Gráficos Históricos - 3 columnas (mismo ancho que tarjetas) */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {sensors.map((sensor) => (
-                    <HistoricalChart
-                      key={sensor.id}
-                      sensorId={sensor.id}
-                      sensorName={sensor.name}
-                      days={0.0833}
-                    />
-                  ))}
+                {/* 📈 Gráficos de PRTG - Grid de iframes */}
+                <div className="space-y-6">
+                  <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4 rounded-t-lg">
+                    <h2 className="text-xl font-bold text-white">Gráficos Históricos (PRTG)</h2>
+                    <p className="text-blue-100 text-sm">Últimas 24 horas de tráfico por sensor</p>
+                  </div>
+                  
+                  {/* Grid de gráficos - Imágenes PNG de PRTG */}
+                  <div className="grid grid-cols-1 gap-6 px-4">
+                    {sensors.map((sensor) => (
+                      <div key={sensor.id} className="bg-white rounded-lg shadow-lg overflow-hidden border-2 border-gray-100">
+                        <div className="bg-gray-50 px-4 py-2 border-b border-gray-200">
+                          <h3 className="font-semibold text-gray-800">{sensor.name}</h3>
+                        </div>
+                        <div className="relative p-4 bg-white">
+                          <img
+                            src={`http://38.253.65.250:8080/chart.png?type=graph&graphid=0&id=${sensor.id}&width=1200&height=400&username=nocittel&passhash=413758319`}
+                            alt={`Gráfico ${sensor.name}`}
+                            className="w-full h-auto"
+                            loading="lazy"
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </>
             )}
@@ -218,11 +230,10 @@ export default function Home() {
         <div className="container mx-auto px-4 py-6 text-center text-gray-600">
           <p>Dashboard USITTEL - Monitoreo en Tiempo Real</p>
           <p className="text-sm mt-2">
-            Datos actualizados automáticamente cada 120 segundos (2 minutos)
+            Tarjetas: actualizadas cada 2 minutos | Gráficos: proporcionados por PRTG
           </p>
         </div>
       </footer>
     </div>
-    </ChartProvider>
   );
 }
