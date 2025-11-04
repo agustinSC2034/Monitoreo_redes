@@ -15,6 +15,7 @@
 import { useEffect, useState } from 'react';
 
 import MapView from '@/components/MapView';
+import NotificationBell from '@/components/NotificationBell';
 import SensorCard from '@/components/SensorCard';
 
 // 📦 Tipo de dato del sensor
@@ -201,6 +202,9 @@ export default function Home() {
                   <span className="hidden sm:inline">Mapa</span>
                 </button>
               </div>
+              
+              {/* 🔔 Campanita de Notificaciones */}
+              <NotificationBell />
               
               {/* 🌓 Toggle de Tema - Más pequeño y solo iconos */}
               <div className={`rounded-lg p-0.5 flex gap-0.5 transition-colors duration-300 ${

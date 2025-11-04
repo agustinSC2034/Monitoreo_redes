@@ -15,6 +15,7 @@
  */
 
 import { NextResponse } from 'next/server';
+import { processSensorData } from '@/lib/alertMonitor';
 import prtgClient from '@/lib/prtgClient';
 
 // Esta función se ejecuta cuando alguien hace GET a /api/status
@@ -25,7 +26,17 @@ export async function GET() {
     // 1️⃣ Llamar al cliente PRTG para obtener sensores críticos
     const sensorsData = await prtgClient.getCriticalSensors();
     
-    // 2️⃣ Procesar los datos para que sean más fáciles de usar en el frontend
+    // 2️⃣ Procesar cada sensor: guardar historial y detectar cambios
+    for (const sensor of sensorsData) {
+      await processSensorData(sensor);
+    }
+    
+    // 2️⃣ Procesar cada sensor: guardar historial y detectar cambios
+    for (const sensor of sensorsData) {
+      await processSensorData(sensor);
+    }
+    
+    // 3️⃣ Procesar los datos para que sean más fáciles de usar en el frontend
     // Convertimos el formato complejo de PRTG a algo simple
     const processedData = sensorsData.map((sensor: any) => {
       // Mapeo de IDs reales a nombres amigables
@@ -83,7 +94,7 @@ export async function GET() {
       console.log(`📊 [DEBUG] ${sensor.name}: lastValue="${sensor.lastValue}"`);
     });
     
-    // 3️⃣ Devolver respuesta exitosa
+    // 4️⃣ Devolver respuesta exitosa
     console.log('✅ [API] /api/status - Datos obtenidos correctamente');
     
     return NextResponse.json({
@@ -94,7 +105,7 @@ export async function GET() {
     });
     
   } catch (error) {
-    // 4️⃣ Si algo sale mal, devolver error
+    // 5️⃣ Si algo sale mal, devolver error
     console.error('❌ [API] /api/status - Error:', error);
     
     return NextResponse.json(
