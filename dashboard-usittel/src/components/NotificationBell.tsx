@@ -26,6 +26,37 @@ export default function NotificationBell() {
   const [isOpen, setIsOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [lastCheckTime, setLastCheckTime] = useState<number>(Date.now());
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+
+  // Sincronizar tema con localStorage
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('dashboard-theme') as 'light' | 'dark' | null;
+    if (savedTheme) {
+      setTheme(savedTheme);
+    }
+    
+    // Escuchar cambios en el tema
+    const handleStorageChange = () => {
+      const newTheme = localStorage.getItem('dashboard-theme') as 'light' | 'dark' | null;
+      if (newTheme) {
+        setTheme(newTheme);
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    // También escuchar cambios locales
+    const interval = setInterval(() => {
+      const currentTheme = localStorage.getItem('dashboard-theme') as 'light' | 'dark' | null;
+      if (currentTheme && currentTheme !== theme) {
+        setTheme(currentTheme);
+      }
+    }, 500);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      clearInterval(interval);
+    };
+  }, [theme]);
 
   // Cargar alertas cada 30 segundos
   useEffect(() => {
@@ -39,6 +70,8 @@ export default function NotificationBell() {
       const response = await fetch('/api/alerts/history?limit=20');
       const data = await response.json();
       
+      console.log('🔔 Alertas recibidas:', data);
+      
       if (data.success) {
         setAlerts(data.data);
         
@@ -48,12 +81,14 @@ export default function NotificationBell() {
           return alertTime > lastCheckTime;
         });
         
+        console.log('🔔 Alertas nuevas:', newAlerts.length, 'de', data.data.length);
+        
         if (newAlerts.length > 0) {
           setUnreadCount(prev => prev + newAlerts.length);
         }
       }
     } catch (error) {
-      console.error('Error cargando alertas:', error);
+      console.error('❌ Error cargando alertas:', error);
     }
   };
 
@@ -95,10 +130,20 @@ export default function NotificationBell() {
       {/* Botón de campanita */}
       <button
         onClick={handleOpen}
-        className="relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+        className={`relative p-2 rounded-lg transition-colors ${
+          theme === 'light'
+            ? 'hover:bg-gray-100'
+            : 'hover:bg-gray-800'
+        }`}
         aria-label="Notificaciones"
       >
-        <Bell className={`w-6 h-6 ${unreadCount > 0 ? 'text-blue-500 animate-pulse' : 'text-gray-600 dark:text-gray-400'}`} />
+        <Bell className={`w-6 h-6 ${
+          unreadCount > 0 
+            ? 'text-blue-500 animate-pulse' 
+            : theme === 'light'
+              ? 'text-gray-600'
+              : 'text-gray-400'
+        }`} />
         
         {/* Badge con número de alertas nuevas */}
         {unreadCount > 0 && (
@@ -118,22 +163,40 @@ export default function NotificationBell() {
           />
           
           {/* Panel de notificaciones */}
-          <div className="absolute right-0 mt-2 w-96 bg-white dark:bg-gray-900 rounded-lg shadow-2xl border border-gray-200 dark:border-gray-700 z-50 max-h-[600px] overflow-hidden flex flex-col">
+          <div className={`absolute right-0 mt-2 w-96 rounded-lg shadow-2xl border z-50 max-h-[600px] overflow-hidden flex flex-col transition-colors duration-300 ${
+            theme === 'light'
+              ? 'bg-white border-gray-200'
+              : 'bg-gray-900 border-gray-700'
+          }`}>
             {/* Header */}
-            <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-              <h3 className="font-semibold text-lg">🔔 Alertas Recientes</h3>
+            <div className={`p-4 border-b flex items-center justify-between transition-colors duration-300 ${
+              theme === 'light'
+                ? 'border-gray-200'
+                : 'border-gray-700'
+            }`}>
+              <h3 className={`font-semibold text-lg transition-colors duration-300 ${
+                theme === 'light' ? 'text-gray-900' : 'text-white'
+              }`}>🔔 Alertas Recientes</h3>
               <button
                 onClick={() => setIsOpen(false)}
-                className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded"
+                className={`p-1 rounded transition-colors ${
+                  theme === 'light'
+                    ? 'hover:bg-gray-100'
+                    : 'hover:bg-gray-800'
+                }`}
               >
-                <X className="w-5 h-5" />
+                <X className={`w-5 h-5 ${
+                  theme === 'light' ? 'text-gray-600' : 'text-gray-400'
+                }`} />
               </button>
             </div>
 
             {/* Lista de alertas */}
             <div className="overflow-y-auto flex-1">
               {alerts.length === 0 ? (
-                <div className="p-8 text-center text-gray-500">
+                <div className={`p-8 text-center transition-colors duration-300 ${
+                  theme === 'light' ? 'text-gray-500' : 'text-gray-400'
+                }`}>
                   <Bell className="w-12 h-12 mx-auto mb-3 opacity-30" />
                   <p>No hay alertas todavía</p>
                   <p className="text-sm mt-1">Las alertas aparecerán aquí cuando se detecten problemas</p>
@@ -142,7 +205,11 @@ export default function NotificationBell() {
                 alerts.map((alert) => (
                   <div
                     key={alert.id}
-                    className="p-4 border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                    className={`p-4 border-b transition-colors ${
+                      theme === 'light'
+                        ? 'border-gray-100 hover:bg-gray-50'
+                        : 'border-gray-800 hover:bg-gray-800'
+                    }`}
                   >
                     <div className="flex items-start gap-3">
                       {/* Icono según el estado */}
@@ -153,15 +220,21 @@ export default function NotificationBell() {
                       {/* Contenido */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-2 mb-1">
-                          <span className="font-semibold text-sm truncate">
+                          <span className={`font-semibold text-sm truncate transition-colors duration-300 ${
+                            theme === 'light' ? 'text-gray-900' : 'text-white'
+                          }`}>
                             {alert.sensor_name}
                           </span>
-                          <span className="text-xs text-gray-500 whitespace-nowrap">
+                          <span className={`text-xs whitespace-nowrap transition-colors duration-300 ${
+                            theme === 'light' ? 'text-gray-500' : 'text-gray-400'
+                          }`}>
                             {formatTime(alert.triggered_at)}
                           </span>
                         </div>
                         
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                        <p className={`text-sm transition-colors duration-300 ${
+                          theme === 'light' ? 'text-gray-600' : 'text-gray-400'
+                        }`}>
                           Estado: <span className={`font-medium ${
                             alert.status.toLowerCase().includes('down') ? 'text-red-600' :
                             alert.status.toLowerCase().includes('warning') ? 'text-yellow-600' :
@@ -172,7 +245,9 @@ export default function NotificationBell() {
                         </p>
                         
                         {alert.message && (
-                          <p className="text-xs text-gray-500 mt-1 line-clamp-2">
+                          <p className={`text-xs mt-1 line-clamp-2 transition-colors duration-300 ${
+                            theme === 'light' ? 'text-gray-500' : 'text-gray-400'
+                          }`}>
                             {alert.message}
                           </p>
                         )}
@@ -180,11 +255,15 @@ export default function NotificationBell() {
                         {/* Indicador de éxito/fallo */}
                         <div className="mt-2 flex items-center gap-2">
                           {alert.success ? (
-                            <span className="text-xs text-green-600 dark:text-green-400">
+                            <span className={`text-xs transition-colors duration-300 ${
+                              theme === 'light' ? 'text-green-600' : 'text-green-400'
+                            }`}>
                               ✓ Notificación enviada
                             </span>
                           ) : (
-                            <span className="text-xs text-red-600 dark:text-red-400">
+                            <span className={`text-xs transition-colors duration-300 ${
+                              theme === 'light' ? 'text-red-600' : 'text-red-400'
+                            }`}>
                               ✗ Error al enviar
                             </span>
                           )}
@@ -198,14 +277,19 @@ export default function NotificationBell() {
 
             {/* Footer */}
             {alerts.length > 0 && (
-              <div className="p-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+              <div className={`p-3 border-t transition-colors duration-300 ${
+                theme === 'light'
+                  ? 'border-gray-200 bg-gray-50'
+                  : 'border-gray-700 bg-gray-800'
+              }`}>
                 <button
                   onClick={() => {
                     setIsOpen(false);
-                    // TODO: Navegar a página de historial completo
                     window.location.href = '/dashboard/alertas';
                   }}
-                  className="w-full text-sm text-blue-600 dark:text-blue-400 hover:underline font-medium"
+                  className={`w-full text-sm hover:underline font-medium transition-colors duration-300 ${
+                    theme === 'light' ? 'text-blue-600' : 'text-blue-400'
+                  }`}
                 >
                   Ver todas las alertas →
                 </button>

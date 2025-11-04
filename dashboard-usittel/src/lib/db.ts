@@ -9,8 +9,8 @@
  */
 
 import Database from 'better-sqlite3';
-import path from 'path';
 import fs from 'fs';
+import path from 'path';
 
 // Ruta de la base de datos (en el directorio del proyecto)
 const DB_PATH = path.join(process.cwd(), 'data', 'monitoring.db');
@@ -392,8 +392,21 @@ export function getAlertHistory(limit: number = 100) {
   
   return alerts.map(alert => ({
     ...alert,
-    channels_sent: JSON.parse(alert.channels_sent),
-    recipients: JSON.parse(alert.recipients),
+    // Parsear solo si es JSON válido, sino usar como string
+    channels_sent: (() => {
+      try {
+        return JSON.parse(alert.channels_sent);
+      } catch {
+        return alert.channels_sent ? [alert.channels_sent] : [];
+      }
+    })(),
+    recipients: (() => {
+      try {
+        return JSON.parse(alert.recipients);
+      } catch {
+        return alert.recipients ? [alert.recipients] : [];
+      }
+    })(),
     success: alert.success === 1
   })) as AlertHistory[];
 }

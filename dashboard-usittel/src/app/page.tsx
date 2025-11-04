@@ -57,6 +57,40 @@ export default function Home() {
   
   // ⏰ Estado: timestamp para forzar actualización de gráficos
   const [graphTimestamp, setGraphTimestamp] = useState<number>(Date.now());
+  
+  // 🕐 Estado: hora actual
+  const [currentTime, setCurrentTime] = useState<string>('');
+
+  // 🌓 Cargar y guardar tema en localStorage
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('dashboard-theme') as 'light' | 'dark' | null;
+    if (savedTheme) {
+      setTheme(savedTheme);
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('dashboard-theme', theme);
+  }, [theme]);
+
+  // 🕐 Actualizar hora cada segundo
+  useEffect(() => {
+    const updateTime = () => {
+      const now = new Date();
+      // Restar 3 horas para Argentina
+      now.setHours(now.getHours() - 3);
+      setCurrentTime(now.toLocaleTimeString('es-AR', { 
+        hour12: false,
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      }));
+    };
+    
+    updateTime();
+    const interval = setInterval(updateTime, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   // 🔄 Función para obtener datos de la API
   const fetchSensors = async () => {
@@ -128,14 +162,21 @@ export default function Home() {
               }`}>
                 {location === 'tandil' ? 'Tandil - Enlaces WAN' : 'La Matanza - Enlaces WAN'}
               </p>
-              {/* Última actualización debajo del subtítulo */}
-              {lastUpdate && (
-                <p className={`text-xs mt-1 transition-colors duration-300 ${
+              {/* Última actualización y hora actual */}
+              <div className="flex items-center gap-4 mt-1">
+                <p className={`text-xs transition-colors duration-300 ${
                   theme === 'light' ? 'text-gray-500' : 'text-gray-400'
                 }`}>
-                  Última actualización: {lastUpdate}
+                  🕐 Hora actual: <span className="font-semibold">{currentTime}</span>
                 </p>
-              )}
+                {lastUpdate && (
+                  <p className={`text-xs transition-colors duration-300 ${
+                    theme === 'light' ? 'text-gray-500' : 'text-gray-400'
+                  }`}>
+                    📡 Última actualización: <span className="font-semibold">{lastUpdate}</span>
+                  </p>
+                )}
+              </div>
             </div>
             
             {/* 🏢 Selectores centrados */}
@@ -314,9 +355,14 @@ export default function Home() {
                           : 'bg-gradient-to-r from-blue-800 to-indigo-900 border border-blue-700'
                       }`}>
                         <h2 className="text-xl font-bold text-white">Gráficos Históricos (PRTG)</h2>
-                        <p className={`text-sm ${theme === 'light' ? 'text-blue-100' : 'text-blue-200'}`}>
-                          Últimas 2 horas de tráfico por sensor
-                        </p>
+                        <div className="flex items-center justify-between">
+                          <p className={`text-sm ${theme === 'light' ? 'text-blue-100' : 'text-blue-200'}`}>
+                            Últimas 2 horas de tráfico por sensor
+                          </p>
+                          <p className={`text-xs ${theme === 'light' ? 'text-blue-100' : 'text-blue-200'}`}>
+                            🕐 Actualización: {currentTime || lastUpdate}
+                          </p>
+                        </div>
                       </div>
                       
                       {/* Grid de gráficos - Imágenes PNG de PRTG */}

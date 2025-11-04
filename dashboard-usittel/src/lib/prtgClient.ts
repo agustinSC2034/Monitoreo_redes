@@ -340,15 +340,22 @@ class PRTGClient {
   /**
    * 🚨 Obtener sensores CRÍTICOS - Enlaces WAN principales + Routers internos
    * 
-   * IDs REALES según PRTG de Tandil:
-   * - CABASE: 13682 - (063) CABASE - Enlace principal (RDB)
-   * - TECO: 13683 - (064) WAN-TECO - L2L x TECO (RDB)
-   * - IPLANxARSAT: 13684 - (065) WAN-IPLANxARSAT - L2L x ARSAT (RDB)
+   * IDs REALES según PRTG de Tandil (ORDEN DE PRIORIDAD):
+   * 
+   * 📌 ENLACES PRINCIPALES (Tránsito IP):
+   * - CABASE: 13682 - (063) CABASE - Enlace principal peering (RDB)
+   * - IPLANxARSAT: 13684 - (065) WAN-IPLANxARSAT - L2L x ARSAT (RDB) ⭐ IPLAN
+   * - TECO: 13683 - (064) WAN-TECO - L2L x TECO (RDB) ⭐ IPLAN
+   * 
+   * 📌 ROUTERS INTERNOS:
    * - RDA-WAN: 2137 - (018) vlan500-WAN - ITTEL-RDA-1-TDL
    * - RDB-DTV: 13673 - ITTEL-RDB-1-TDL / RDB-DTV
+   * 
+   * NOTA: IPLAN es nuestro proveedor de tránsito IP principal
    */
   async getCriticalSensors() {
-    const sensorIds = [13682, 13683, 13684, 2137, 13673]; // 3 WAN principales + RDA + DTV
+    // Orden de prioridad: CABASE, IPLAN ARSAT, IPLAN TECO, RDA, DTV
+    const sensorIds = [13682, 13684, 13683, 2137, 13673];
     
     console.log('🚨 Consultando sensores críticos...');
     
