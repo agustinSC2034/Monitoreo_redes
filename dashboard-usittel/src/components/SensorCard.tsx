@@ -73,7 +73,7 @@ export default function SensorCard({
     return cleaned;
   };
 
-  // Parsear dd/MM/yyyy HH:mm:ss a Date local y restar 3 horas
+  // Parsear dd/MM/yyyy HH:mm:ss a Date local (ya viene ajustado desde el API)
   const parseArgDate = (s: string): Date | null => {
     const m = s.match(/(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2}):(\d{2})/);
     if (!m) return null;
@@ -86,8 +86,7 @@ export default function SensorCard({
       parseInt(MM),
       parseInt(SS)
     );
-    // Restar 3 horas para ajustar zona horaria
-    date.setHours(date.getHours() - 3);
+    // NO restar 3 horas aquí - el API ya lo hizo
     return date;
   };
 

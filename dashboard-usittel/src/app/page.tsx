@@ -77,8 +77,7 @@ export default function Home() {
   useEffect(() => {
     const updateTime = () => {
       const now = new Date();
-      // Restar 3 horas para Argentina
-      now.setHours(now.getHours() - 3);
+      // La hora del navegador ya está en zona horaria correcta (Argentina)
       setCurrentTime(now.toLocaleTimeString('es-AR', { 
         hour12: false,
         hour: '2-digit',
@@ -105,9 +104,8 @@ export default function Home() {
       
       if (data.success) {
         setSensors(data.data);
-        // Restar 3 horas a la hora actual para ajustar la zona horaria
+        // La hora del navegador ya está en zona horaria correcta (Argentina)
         const now = new Date();
-        now.setHours(now.getHours() - 3);
         setLastUpdate(now.toLocaleTimeString('es-AR', { 
           hour12: false,
           hour: '2-digit',

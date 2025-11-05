@@ -73,7 +73,7 @@ export async function sendAlertEmail(
     
     // Enviar email
     const info = await transport.sendMail({
-      from: `"USITTEL Monitoreo" <${FROM_EMAIL}>`,
+      from: `"ITTEL Monitoreo" <${FROM_EMAIL}>`,
       to: validRecipients.join(', '),
       subject: `${getPriorityEmoji(priority)} ${subject}`,
       text: message, // Versión texto plano
@@ -104,7 +104,7 @@ export async function sendAlertEmail(
 }
 
 /**
- * 🎨 Generar HTML del email
+ * 🎨 Generar HTML del email (Diseño Minimalista)
  */
 function generateEmailHTML(subject: string, message: string, priority: string): string {
   const priorityColor = {
@@ -132,66 +132,56 @@ function generateEmailHTML(subject: string, message: string, priority: string): 
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${subject}</title>
 </head>
-<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f3f4f6;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f3f4f6; padding: 20px;">
+<body style="margin: 0; padding: 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; background-color: #ffffff; color: #1f2937;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto;">
+    
+    <!-- Header -->
     <tr>
-      <td align="center">
-        <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); overflow: hidden;">
-          
-          <!-- Header -->
-          <tr>
-            <td style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px 20px; text-align: center;">
-              <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: bold;">
-                🚨 USITTEL Monitoreo de Red
-              </h1>
-            </td>
-          </tr>
-          
-          <!-- Priority Badge -->
-          <tr>
-            <td style="padding: 20px; text-align: center;">
-              <div style="display: inline-block; background-color: ${priorityColor}; color: white; padding: 8px 20px; border-radius: 20px; font-weight: bold; font-size: 14px;">
-                PRIORIDAD: ${priorityLabel}
-              </div>
-            </td>
-          </tr>
-          
-          <!-- Subject -->
-          <tr>
-            <td style="padding: 0 30px 20px 30px;">
-              <h2 style="margin: 0; color: #1f2937; font-size: 20px; font-weight: 600;">
-                ${subject}
-              </h2>
-            </td>
-          </tr>
-          
-          <!-- Message Content -->
-          <tr>
-            <td style="padding: 0 30px 30px 30px;">
-              <div style="background-color: #f9fafb; border-left: 4px solid ${priorityColor}; padding: 20px; border-radius: 4px; color: #374151; font-size: 14px; line-height: 1.6;">
-                ${formattedMessage}
-              </div>
-            </td>
-          </tr>
-          
-          <!-- Footer -->
-          <tr>
-            <td style="background-color: #f9fafb; padding: 20px; text-align: center; border-top: 1px solid #e5e7eb;">
-              <p style="margin: 0 0 10px 0; color: #6b7280; font-size: 12px;">
-                Este es un mensaje automático del sistema de monitoreo de USITTEL.
-              </p>
-              <p style="margin: 0; color: #6b7280; font-size: 12px;">
-                Enviado el ${new Date().toLocaleString('es-AR', { 
-                  dateStyle: 'full', 
-                  timeStyle: 'short' 
-                })}
-              </p>
-            </td>
-          </tr>
-          
-        </table>
+      <td style="border-bottom: 3px solid ${priorityColor}; padding-bottom: 15px; margin-bottom: 20px;">
+        <h1 style="margin: 0; font-size: 14px; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; color: #000000;">
+          ITTEL Monitoreo
+        </h1>
+        <div style="margin-top: 5px; font-size: 11px; color: #6b7280;">
+          Prioridad: <strong style="color: ${priorityColor};">${priorityLabel}</strong>
+        </div>
       </td>
     </tr>
+    
+    <!-- Subject -->
+    <tr>
+      <td style="padding: 20px 0 15px 0;">
+        <h2 style="margin: 0; font-size: 16px; font-weight: bold; color: #000000;">
+          ${subject}
+        </h2>
+      </td>
+    </tr>
+    
+    <!-- Message Content -->
+    <tr>
+      <td style="padding: 0 0 20px 0;">
+        <div style="border-left: 3px solid ${priorityColor}; padding-left: 15px; font-size: 13px; line-height: 1.6; color: #374151;">
+          ${formattedMessage}
+        </div>
+      </td>
+    </tr>
+    
+    <!-- Footer -->
+    <tr>
+      <td style="border-top: 1px solid #e5e7eb; padding-top: 15px; font-size: 11px; color: #9ca3af;">
+        <div>Sistema de monitoreo de red - Grupo ITTEL</div>
+        <div style="margin-top: 3px;">USITTEL (Tandil) | LARANET (La Matanza)</div>
+        <div style="margin-top: 5px; color: #d1d5db;">
+          ${new Date().toLocaleString('es-AR', { 
+            year: 'numeric',
+            month: '2-digit', 
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+          })}
+        </div>
+      </td>
+    </tr>
+    
   </table>
 </body>
 </html>
@@ -235,24 +225,19 @@ export async function verifyEmailConfig(): Promise<boolean> {
  * 📧 Enviar email de prueba
  */
 export async function sendTestEmail(recipient: string): Promise<boolean> {
-  const subject = 'Prueba de Sistema de Alertas USITTEL';
-  const message = `🎉 ¡Prueba exitosa!
+  const subject = 'Prueba de Sistema de Alertas';
+  const message = `Configuración verificada correctamente.
 
-Este es un email de prueba del sistema de monitoreo de red de USITTEL.
+SERVIDOR: ${SMTP_CONFIG.host}:${SMTP_CONFIG.port}
+USUARIO: ${SMTP_CONFIG.auth.user}
+FECHA: ${new Date().toLocaleString('es-AR')}
 
-📊 Información del sistema:
-• Servidor: ${SMTP_CONFIG.host}:${SMTP_CONFIG.port}
-• Usuario: ${SMTP_CONFIG.auth.user}
-• Fecha: ${new Date().toLocaleString('es-AR')}
+El sistema está operativo y listo para enviar alertas.
 
-Si recibiste este email, la configuración es correcta. ✅
-
-El sistema ya está listo para enviar alertas en caso de:
-🔴 Caídas de enlaces (DOWN)
-🟡 Advertencias (WARNING)
-🔵 Anomalías detectadas
-
-¡Todo funcionando correctamente!`;
+Tipos de alertas configuradas:
+- Caídas de enlaces (DOWN)
+- Advertencias (WARNING)
+- Umbrales personalizados`;
 
   return sendAlertEmail([recipient], subject, message, 'low');
 }

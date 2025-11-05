@@ -203,7 +203,42 @@ export default function AlertasPage() {
                       <span className={`text-sm whitespace-nowrap transition-colors duration-300 ${
                         theme === 'light' ? 'text-gray-500' : 'text-gray-400'
                       }`}>
-                        {new Date(alert.triggered_at).toLocaleString('es-AR')}
+                        {/* Extraer TIMESTAMP del mensaje si existe, sino usar triggered_at ajustado */}
+                        {(() => {
+                          // Intentar extraer TIMESTAMP del mensaje (acepta 1 o 2 dígitos en día/mes)
+                          const timestampMatch = alert.message?.match(/TIMESTAMP:\s*(\d{1,2})\/(\d{1,2})\/(\d{4}),?\s*(\d{2}):(\d{2}):(\d{2})/);
+                          if (timestampMatch) {
+                            const [, dd, mm, yyyy, HH, MM, SS] = timestampMatch;
+                            // Parsear fecha y convertir a formato con AM/PM
+                            const date = new Date(
+                              parseInt(yyyy),
+                              parseInt(mm) - 1,
+                              parseInt(dd),
+                              parseInt(HH),
+                              parseInt(MM),
+                              parseInt(SS)
+                            );
+                            return date.toLocaleString('es-AR', {
+                              year: 'numeric',
+                              month: '2-digit',
+                              day: '2-digit',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                              second: '2-digit',
+                              hour12: true
+                            });
+                          }
+                          // Fallback: usar triggered_at de la BD con AM/PM
+                          return new Date(alert.triggered_at).toLocaleString('es-AR', {
+                            year: 'numeric',
+                            month: '2-digit',
+                            day: '2-digit',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            second: '2-digit',
+                            hour12: true
+                          });
+                        })()}
                       </span>
                     </div>
 

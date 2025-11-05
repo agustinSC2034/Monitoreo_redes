@@ -159,7 +159,7 @@ export interface AlertRule {
   id?: number;
   name: string;
   sensor_id: string;
-  condition: 'down' | 'warning' | 'unusual' | 'slow';
+  condition: 'down' | 'warning' | 'unusual' | 'slow' | 'traffic_spike' | 'traffic_drop';
   threshold?: number;
   duration?: number;
   channels: string[]; // ['email', 'whatsapp']

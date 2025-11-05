@@ -82,10 +82,10 @@ export default function NotificationBell() {
         });
         
         console.log('🔔 Alertas nuevas:', newAlerts.length, 'de', data.data.length);
+        console.log('🔔 Último check:', new Date(lastCheckTime).toLocaleString());
         
-        if (newAlerts.length > 0) {
-          setUnreadCount(prev => prev + newAlerts.length);
-        }
+        // CORREGIDO: Reemplazar contador en vez de sumar
+        setUnreadCount(newAlerts.length);
       }
     } catch (error) {
       console.error('❌ Error cargando alertas:', error);

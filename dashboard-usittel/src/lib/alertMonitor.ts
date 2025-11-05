@@ -18,12 +18,15 @@ import {
   type StatusChange,
   type AlertRule
 } from './db';
+import { sendAlertEmail } from './emailService';
+import { sendWhatsAppAlert } from './whatsappService';
 
 // Mapa para trackear último estado conocido de cada sensor
 const lastKnownStates = new Map<string, {
   status: string;
   status_raw: number;
   timestamp: number;
+  trafficValue?: number; // Valor de tráfico en Mbit/s
 }>();
 
 // Mapa para trackear últimas alertas enviadas (cooldown)
@@ -79,15 +82,25 @@ export async function processSensorData(sensor: any) {
 async function detectStatusChange(current: SensorHistory) {
   const sensorId = current.sensor_id;
   const lastKnown = lastKnownStates.get(sensorId);
+  const currentTraffic = parseTrafficValue(current.lastvalue || '');
   
   // Si no hay estado previo, guardarlo y salir
   if (!lastKnown) {
     lastKnownStates.set(sensorId, {
       status: current.status,
       status_raw: current.status_raw,
-      timestamp: current.timestamp
+      timestamp: current.timestamp,
+      trafficValue: currentTraffic || undefined
     });
+    
+    // Aunque no haya cambio, evaluar reglas de umbral
+    await checkThresholdAlerts(current);
     return;
+  }
+  
+  // Verificar cambio drástico de tráfico
+  if (currentTraffic && lastKnown.trafficValue) {
+    await detectTrafficChange(current, currentTraffic, lastKnown.trafficValue);
   }
   
   // Verificar si cambió el estado
@@ -121,11 +134,135 @@ async function detectStatusChange(current: SensorHistory) {
     lastKnownStates.set(sensorId, {
       status: current.status,
       status_raw: current.status_raw,
-      timestamp: current.timestamp
+      timestamp: current.timestamp,
+      trafficValue: currentTraffic || undefined
     });
     
-    // Verificar si hay que disparar alertas
+    // Verificar si hay que disparar alertas por cambio de estado
     await checkAndTriggerAlerts(current, change);
+  } else {
+    // No hubo cambio de estado, pero actualizar tráfico
+    lastKnownStates.set(sensorId, {
+      status: current.status,
+      status_raw: current.status_raw,
+      timestamp: current.timestamp,
+      trafficValue: currentTraffic || undefined
+    });
+    
+    // Evaluar reglas de umbral
+    await checkThresholdAlerts(current);
+  }
+}
+
+/**
+ * 📊 Detectar cambios drásticos de tráfico
+ */
+async function detectTrafficChange(
+  sensor: SensorHistory, 
+  currentTraffic: number, 
+  previousTraffic: number
+) {
+  const change = ((currentTraffic - previousTraffic) / previousTraffic) * 100;
+  const absChange = Math.abs(change);
+  
+  // Ignorar cambios drásticos si el tráfico actual es muy bajo (< 10 Mbit/s)
+  // Esto evita alertas falsas en sensores con tráfico casi nulo
+  if (currentTraffic < 10) {
+    return;
+  }
+  
+  // Si el cambio es mayor al 50%, es significativo
+  if (absChange > 50) {
+    const changeType = change > 0 ? 'AUMENTO' : 'CAÍDA';
+    console.log(`📊 Cambio drástico de tráfico en ${sensor.sensor_name}: ${changeType} de ${absChange.toFixed(1)}%`);
+    console.log(`   Anterior: ${previousTraffic.toFixed(0)} Mbit/s → Actual: ${currentTraffic.toFixed(0)} Mbit/s`);
+    
+    // Log del sistema
+    saveSystemLog({
+      level: 'warn',
+      category: 'traffic_change',
+      message: `${sensor.sensor_name}: ${changeType} drástico de tráfico (${absChange.toFixed(1)}%)`,
+      metadata: {
+        sensor_id: sensor.sensor_id,
+        previous: previousTraffic,
+        current: currentTraffic,
+        change_percent: change
+      },
+      timestamp: sensor.timestamp
+    });
+    
+    // Verificar si hay reglas para este tipo de cambio
+    const rules = getAlertRuleBySensor(sensor.sensor_id);
+    for (const rule of rules) {
+      if (
+        (change > 0 && rule.condition === 'traffic_spike' && absChange > (rule.threshold || 50)) ||
+        (change < 0 && rule.condition === 'traffic_drop' && absChange > (rule.threshold || 50))
+      ) {
+        // Verificar cooldown
+        const cooldownKey = `${rule.id}_${sensor.sensor_id}`;
+        const lastAlertTime = lastAlertTimes.get(cooldownKey);
+        const now = Math.floor(Date.now() / 1000);
+        
+        if (!lastAlertTime || (now - lastAlertTime) >= rule.cooldown) {
+          console.log(`🚨 Disparando alerta de cambio de tráfico: ${rule.name}`);
+          
+          // Crear cambio ficticio con información de tráfico
+          const trafficChange: StatusChange = {
+            sensor_id: sensor.sensor_id,
+            sensor_name: sensor.sensor_name,
+            old_status: `${previousTraffic.toFixed(0)} Mbit/s`,
+            new_status: `${currentTraffic.toFixed(0)} Mbit/s (${change > 0 ? '+' : ''}${change.toFixed(1)}%)`,
+            timestamp: sensor.timestamp
+          };
+          
+          await triggerAlert(rule, sensor, trafficChange);
+          lastAlertTimes.set(cooldownKey, now);
+        }
+      }
+    }
+  }
+}
+
+/**
+ * 🎯 Verificar alertas de umbral (sin cambio de estado)
+ */
+async function checkThresholdAlerts(sensor: SensorHistory) {
+  const rules = getAlertRuleBySensor(sensor.sensor_id);
+  
+  if (!rules || rules.length === 0) {
+    return;
+  }
+  
+  // Crear un cambio "ficticio" para la evaluación de umbral
+  const dummyChange: StatusChange = {
+    sensor_id: sensor.sensor_id,
+    sensor_name: sensor.sensor_name,
+    old_status: sensor.status,
+    new_status: sensor.status,
+    timestamp: sensor.timestamp
+  };
+  
+  for (const rule of rules) {
+    // Solo evaluar reglas de tipo 'slow' (umbral)
+    if (rule.condition !== 'slow') continue;
+    
+    // Verificar cooldown
+    const cooldownKey = `${rule.id}_${sensor.sensor_id}`;
+    const lastAlertTime = lastAlertTimes.get(cooldownKey);
+    const now = Math.floor(Date.now() / 1000);
+    
+    if (lastAlertTime && (now - lastAlertTime) < rule.cooldown) {
+      continue;
+    }
+    
+    // Verificar condición de umbral
+    const shouldTrigger = evaluateAlertCondition(rule, sensor, dummyChange);
+    
+    if (shouldTrigger) {
+      console.log(`🚨 Umbral superado: ${rule.name}`);
+      await triggerAlert(rule, sensor, dummyChange);
+      lastAlertTimes.set(cooldownKey, now);
+    }
   }
 }
 
@@ -180,12 +317,52 @@ function evaluateAlertCondition(rule: AlertRule, sensor: SensorHistory, change: 
       return sensor.status_raw !== 3;
     
     case 'slow':
-      // TODO: Implementar lógica de velocidad lenta
-      // Requiere comparar con threshold de ancho de banda
+      // Evaluar umbral de tráfico (máximo)
+      if (rule.threshold && sensor.lastvalue) {
+        const trafficValue = parseTrafficValue(sensor.lastvalue);
+        if (trafficValue !== null) {
+          console.log(`📊 Tráfico actual: ${trafficValue} Mbit/s | Umbral: ${rule.threshold} Mbit/s`);
+          return trafficValue > rule.threshold;
+        }
+      }
+      return false;
+    
+    case 'traffic_spike':
+      // Detectado en detectTrafficChange()
+      return false;
+    
+    case 'traffic_drop':
+      // Detectado en detectTrafficChange()
       return false;
     
     default:
       return false;
+  }
+}
+
+/**
+ * 🔢 Parsear valor de tráfico a Mbit/s
+ */
+function parseTrafficValue(lastvalue: string): number | null {
+  if (!lastvalue) return null;
+  
+  // Formato típico: "6.221.063 kbit/s" o "5.4 Gbit/s"
+  const match = lastvalue.match(/([\d.,]+)\s*(kbit|Mbit|Gbit)/i);
+  if (!match) return null;
+  
+  const value = parseFloat(match[1].replace(/\./g, '').replace(',', '.'));
+  const unit = match[2].toLowerCase();
+  
+  // Convertir todo a Mbit/s
+  switch (unit) {
+    case 'kbit':
+      return value / 1000; // kbit/s a Mbit/s
+    case 'mbit':
+      return value; // Ya está en Mbit/s
+    case 'gbit':
+      return value * 1000; // Gbit/s a Mbit/s
+    default:
+      return null;
   }
 }
 
@@ -211,7 +388,7 @@ async function triggerAlert(rule: AlertRule, sensor: SensorHistory, change: Stat
             break;
           
           case 'whatsapp':
-            await sendWhatsAppAlert(rule, message);
+            await sendWhatsAppAlertInternal(rule, message);
             channelResults.push({ channel: 'whatsapp', success: true });
             break;
           
@@ -263,28 +440,53 @@ async function triggerAlert(rule: AlertRule, sensor: SensorHistory, change: Stat
 }
 
 /**
- * 📝 Formatear mensaje de alerta
+ * 📝 Formatear mensaje de alerta (Minimalista)
  */
 function formatAlertMessage(rule: AlertRule, sensor: SensorHistory, change: StatusChange): string {
-  const priorityEmoji = {
-    low: '🔵',
-    medium: '🟡',
-    high: '🟠',
-    critical: '🔴'
-  }[rule.priority];
+  // sensor.timestamp es Unix timestamp en UTC (segundos)
+  // Convertir a milisegundos y restar 3 horas para Argentina (UTC-3)
+  const adjustedTimestamp = (sensor.timestamp * 1000) - (3 * 60 * 60 * 1000);
+  const timestamp = new Date(adjustedTimestamp).toLocaleString('es-AR', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: true, // Formato 12 horas con AM/PM
+    timeZone: 'UTC' // Importante: ya ajustamos manualmente, usar UTC para no re-ajustar
+  });
   
-  const statusEmoji = sensor.status_raw === 5 ? '❌' : sensor.status_raw === 4 ? '⚠️' : 'ℹ️';
+  let message = `SENSOR: ${sensor.sensor_name}\n`;
   
-  return `${priorityEmoji} ${statusEmoji} ALERTA: ${rule.name}
-
-📡 Sensor: ${sensor.sensor_name}
-📊 Estado: ${change.old_status} → ${sensor.status}
-⏰ Timestamp: ${new Date(sensor.timestamp * 1000).toLocaleString('es-AR')}
-💬 Mensaje: ${sensor.message || 'Sin detalles adicionales'}
-📈 Último valor: ${sensor.lastvalue || 'N/A'}
-
-🔔 Prioridad: ${rule.priority.toUpperCase()}
-⏱️ Duración estado anterior: ${change.duration ? Math.floor(change.duration / 60) + ' minutos' : 'N/A'}`;
+  if (rule.condition === 'slow' && rule.threshold) {
+    // Alerta de umbral
+    message += `CONDICIÓN: Tráfico > ${rule.threshold} Mbit/s\n`;
+    message += `VALOR ACTUAL: ${sensor.lastvalue || 'N/A'}\n`;
+  } else if (rule.condition === 'traffic_spike' || rule.condition === 'traffic_drop') {
+    // Alerta de cambio drástico
+    const changeType = rule.condition === 'traffic_spike' ? 'AUMENTO DRÁSTICO' : 'CAÍDA DRÁSTICA';
+    message += `CONDICIÓN: ${changeType} de tráfico\n`;
+    message += `ANTERIOR: ${change.old_status}\n`;
+    message += `ACTUAL: ${change.new_status}\n`;
+  } else {
+    // Alerta de cambio de estado (DOWN, WARNING, etc)
+    message += `CONDICIÓN: Cambio de estado\n`;
+    message += `ESTADO: ${change.old_status} → ${sensor.status}\n`;
+    if (change.duration) {
+      const minutes = Math.floor(change.duration / 60);
+      message += `DURACIÓN ANTERIOR: ${minutes} min\n`;
+    }
+  }
+  
+  message += `TIMESTAMP: ${timestamp}\n`;
+  message += `PRIORIDAD: ${rule.priority.toUpperCase()}\n`;
+  
+  if (sensor.message && !sensor.message.includes('<div')) {
+    message += `\nDETALLES:\n${sensor.message}`;
+  }
+  
+  return message;
 }
 
 /**
@@ -314,15 +516,36 @@ async function sendEmailAlert(rule: AlertRule, message: string) {
 }
 
 /**
- * 📱 Enviar alerta por WhatsApp (placeholder)
+ * 📱 Enviar alerta por WhatsApp usando Twilio
  */
-async function sendWhatsAppAlert(rule: AlertRule, message: string) {
-  // TODO: Implementar con Twilio
-  console.log(`📱 [WHATSAPP] Enviando alerta a:`, rule.recipients.filter(r => r.startsWith('+')));
-  console.log(message);
-  
-  // Por ahora solo simular
-  return Promise.resolve();
+async function sendWhatsAppAlertInternal(rule: AlertRule, message: string) {
+  try {
+    // Filtrar solo destinatarios de WhatsApp (empiezan con +)
+    const whatsappRecipients = rule.recipients.filter(r => r.startsWith('+'));
+    
+    if (whatsappRecipients.length === 0) {
+      console.log('⚠️ No hay destinatarios de WhatsApp configurados');
+      return;
+    }
+    
+    console.log(`📱 [WHATSAPP] Enviando alerta a:`, whatsappRecipients);
+    
+    // Usar el servicio de WhatsApp
+    const result = await sendWhatsAppAlert(
+      whatsappRecipients,
+      rule.name,
+      message,
+      rule.priority.toUpperCase()
+    );
+    
+    if (result.success) {
+      console.log(`✅ WhatsApp enviado: ${result.sent} exitosos`);
+    } else {
+      console.error(`❌ Error enviando WhatsApp:`, result.errors);
+    }
+  } catch (error) {
+    console.error('❌ Error en sendWhatsAppAlertInternal:', error);
+  }
 }
 
 /**
