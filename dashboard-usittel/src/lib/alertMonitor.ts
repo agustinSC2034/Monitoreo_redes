@@ -288,15 +288,29 @@ function formatAlertMessage(rule: AlertRule, sensor: SensorHistory, change: Stat
 }
 
 /**
- * 📧 Enviar alerta por email (placeholder)
+ * 📧 Enviar alerta por email (REAL)
  */
 async function sendEmailAlert(rule: AlertRule, message: string) {
-  // TODO: Implementar con NodeMailer
-  console.log(`📧 [EMAIL] Enviando alerta a:`, rule.recipients.filter(r => r.includes('@')));
-  console.log(message);
+  const { sendAlertEmail } = await import('./emailService');
   
-  // Por ahora solo simular
-  return Promise.resolve();
+  const emailRecipients = rule.recipients.filter(r => r.includes('@'));
+  
+  if (emailRecipients.length === 0) {
+    console.warn('⚠️ No hay destinatarios de email válidos en la regla');
+    return;
+  }
+  
+  console.log(`📧 [EMAIL] Enviando alerta a:`, emailRecipients);
+  
+  const subject = `Alerta: ${rule.name}`;
+  const success = await sendAlertEmail(emailRecipients, subject, message, rule.priority);
+  
+  if (success) {
+    console.log('✅ Email enviado exitosamente');
+  } else {
+    console.error('❌ Error al enviar email');
+    throw new Error('Failed to send email');
+  }
 }
 
 /**
