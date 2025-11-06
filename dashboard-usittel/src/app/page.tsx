@@ -1,13 +1,6 @@
 /**
- * 🏠 Dashboard Principal - Monitoreo USITTEL Tandil
- * 
- * Muestra el estado en tiempo real de los 4 enlaces WAN principales:
- * - CABASE
- * - TECO
- * - IPLANxARSAT
- * - ARSAT CNO1
- * 
- * Se auto-actualiza cada 30 segundos
+ * Dashboard Principal - Monitoreo ITTEL
+ * Diseño minimalista y profesional
  */
 
 'use client';
@@ -18,7 +11,6 @@ import MapView from '@/components/MapView';
 import NotificationBell from '@/components/NotificationBell';
 import SensorCard from '@/components/SensorCard';
 
-// 📦 Tipo de dato del sensor
 interface Sensor {
   id: string;
   name: string;
@@ -31,7 +23,6 @@ interface Sensor {
   priority: number;
 }
 
-// 📦 Tipo de respuesta de la API
 interface ApiResponse {
   success: boolean;
   data: Sensor[];
@@ -40,45 +31,30 @@ interface ApiResponse {
 }
 
 export default function Home() {
-  // 🎯 Estado: sensores y loading
   const [sensors, setSensors] = useState<Sensor[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdate, setLastUpdate] = useState<string>('');
-  
-  // 🗺️ Estado: tipo de vista (cards o map)
   const [viewMode, setViewMode] = useState<'cards' | 'map'>('cards');
-  
-  // 🏢 Estado: localidad seleccionada (Tandil o Matanza)
   const [location, setLocation] = useState<'tandil' | 'matanza'>('tandil');
-  
-  // 🌓 Estado: tema (light o dark)
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
-  
-  // ⏰ Estado: timestamp para forzar actualización de gráficos
   const [graphTimestamp, setGraphTimestamp] = useState<number>(Date.now());
-  
-  // 🕐 Estado: hora actual
   const [currentTime, setCurrentTime] = useState<string>('');
 
-  // 🌓 Cargar y guardar tema en localStorage
+  // Cargar y guardar tema
   useEffect(() => {
     const savedTheme = localStorage.getItem('dashboard-theme') as 'light' | 'dark' | null;
-    if (savedTheme) {
-      setTheme(savedTheme);
-    }
+    if (savedTheme) setTheme(savedTheme);
   }, []);
 
   useEffect(() => {
     localStorage.setItem('dashboard-theme', theme);
   }, [theme]);
 
-  // 🕐 Actualizar hora cada segundo
+  // Actualizar hora cada segundo
   useEffect(() => {
     const updateTime = () => {
       const now = new Date();
-      // Restar 3 horas para Argentina
-      now.setHours(now.getHours() - 3);
       setCurrentTime(now.toLocaleTimeString('es-AR', { 
         hour12: false,
         hour: '2-digit',
@@ -92,7 +68,7 @@ export default function Home() {
     return () => clearInterval(interval);
   }, []);
 
-  // 🔄 Función para obtener datos de la API
+  // Obtener datos de la API
   const fetchSensors = async () => {
     try {
       const response = await fetch('/api/status');
@@ -105,9 +81,7 @@ export default function Home() {
       
       if (data.success) {
         setSensors(data.data);
-        // Restar 3 horas a la hora actual para ajustar la zona horaria
         const now = new Date();
-        now.setHours(now.getHours() - 3);
         setLastUpdate(now.toLocaleTimeString('es-AR', { 
           hour12: false,
           hour: '2-digit',
@@ -115,7 +89,6 @@ export default function Home() {
           second: '2-digit'
         }));
         setError(null);
-        // Actualizar timestamp de gráficos para forzar recarga
         setGraphTimestamp(Date.now());
       } else {
         throw new Error('Error al obtener datos');
@@ -128,186 +101,183 @@ export default function Home() {
     }
   };
 
-  // 🚀 Efecto: cargar datos al montar y cada 120 segundos (2 minutos)
+  // Auto-actualización cada 2 minutos
   useEffect(() => {
     fetchSensors();
-    
-    // Auto-actualizar cada 120 segundos (2 minutos)
     const interval = setInterval(fetchSensors, 120000);
-    
-    // Limpiar intervalo al desmontar
     return () => clearInterval(interval);
   }, []);
 
   return (
-    <div className={`min-h-screen transition-colors duration-300 ${
+    <div className={`min-h-screen ${
       theme === 'light' 
-        ? 'bg-gradient-to-br from-blue-50 to-indigo-100' 
-        : 'bg-gradient-to-br from-gray-900 via-slate-800 to-gray-900'
+        ? 'bg-gray-50' 
+        : 'bg-gray-900'
     }`}>
-      {/* 🎨 Header */}
-      <header className={`shadow-md transition-colors duration-300 relative ${
-        theme === 'light' ? 'bg-white' : 'bg-gray-800 border-b border-gray-700'
+      {/* Header limpio y minimalista */}
+      <header className={`border-b ${
+        theme === 'light' ? 'bg-white border-gray-200' : 'bg-gray-800 border-gray-700'
       }`}>
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <div>
-              <h1 className={`text-3xl font-bold transition-colors duration-300 ${
+        <div className="container mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            {/* Logo y título */}
+            <div className="flex items-center gap-4">
+              <div className={`text-2xl font-light ${
                 theme === 'light' ? 'text-gray-900' : 'text-white'
               }`}>
-                {location === 'tandil' ? 'Monitoreo USITTEL' : 'Monitoreo LARANET'}
-              </h1>
-              <p className={`transition-colors duration-300 ${
-                theme === 'light' ? 'text-gray-600' : 'text-gray-300'
+                ITTEL Monitoreo
+              </div>
+              <div className={`hidden sm:flex items-center gap-2 text-sm ${
+                theme === 'light' ? 'text-gray-500' : 'text-gray-400'
               }`}>
-                {location === 'tandil' ? 'Tandil - Enlaces WAN' : 'La Matanza - Enlaces WAN'}
-              </p>
-              {/* Última actualización y hora actual */}
-              <div className="flex items-center gap-4 mt-1">
-                <p className={`text-xs transition-colors duration-300 ${
-                  theme === 'light' ? 'text-gray-500' : 'text-gray-400'
-                }`}>
-                  🕐 Hora actual: <span className="font-semibold">{currentTime}</span>
-                </p>
-                {lastUpdate && (
-                  <p className={`text-xs transition-colors duration-300 ${
-                    theme === 'light' ? 'text-gray-500' : 'text-gray-400'
-                  }`}>
-                    📡 Última actualización: <span className="font-semibold">{lastUpdate}</span>
-                  </p>
-                )}
+                <span className="w-1 h-1 rounded-full bg-current"></span>
+                <span>{location === 'tandil' ? 'USITTEL Tandil' : 'LARANET La Matanza'}</span>
               </div>
             </div>
             
-            {/* 🏢 Selectores centrados */}
-            <div className="flex items-center gap-4">
-              <div className={`rounded-lg p-1 flex gap-1 transition-colors duration-300 ${
-                theme === 'light'
-                  ? (location === 'tandil' ? 'bg-blue-100' : 'bg-purple-100')
-                  : 'bg-gray-700'
+            {/* Controles */}
+            <div className="flex items-center gap-3">
+              {/* Selector de ubicación */}
+              <div className={`flex rounded-md overflow-hidden border ${
+                theme === 'light' ? 'border-gray-300' : 'border-gray-600'
               }`}>
                 <button
                   onClick={() => setLocation('tandil')}
-                  className={`px-5 py-2 rounded-md font-semibold transition-all ${
+                  className={`px-4 py-2 text-sm transition-colors ${
                     location === 'tandil'
-                      ? 'bg-green-600 text-white shadow-md'
+                      ? theme === 'light'
+                        ? 'bg-gray-900 text-white'
+                        : 'bg-white text-gray-900'
                       : theme === 'light'
-                        ? 'text-gray-700 hover:bg-white/50'
-                        : 'text-gray-300 hover:bg-gray-600'
+                        ? 'bg-white text-gray-700 hover:bg-gray-50'
+                        : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
                   }`}
                 >
-                  USITTEL
+                  Tandil
                 </button>
                 <button
                   onClick={() => setLocation('matanza')}
-                  className={`px-5 py-2 rounded-md font-semibold transition-all ${
+                  className={`px-4 py-2 text-sm transition-colors border-l ${
+                    theme === 'light' ? 'border-gray-300' : 'border-gray-600'
+                  } ${
                     location === 'matanza'
-                      ? 'bg-purple-600 text-white shadow-md'
+                      ? theme === 'light'
+                        ? 'bg-gray-900 text-white'
+                        : 'bg-white text-gray-900'
                       : theme === 'light'
-                        ? 'text-gray-700 hover:bg-white/50'
-                        : 'text-gray-300 hover:bg-gray-600'
+                        ? 'bg-white text-gray-700 hover:bg-gray-50'
+                        : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
                   }`}
                 >
-                  LARANET
+                  La Matanza
                 </button>
               </div>
               
-              {/* 🔀 Toggle de Vista */}
-              <div className={`rounded-lg p-1 flex gap-1 transition-colors duration-300 ${
-                theme === 'light' ? 'bg-gray-100' : 'bg-gray-700'
+              {/* Vista */}
+              <div className={`flex rounded-md overflow-hidden border ${
+                theme === 'light' ? 'border-gray-300' : 'border-gray-600'
               }`}>
                 <button
                   onClick={() => setViewMode('cards')}
-                  className={`px-4 py-2 rounded-md font-medium transition-all flex items-center gap-2 ${
+                  className={`px-4 py-2 text-sm transition-colors ${
                     viewMode === 'cards'
-                      ? `${location === 'tandil' ? 'bg-blue-600' : 'bg-purple-600'} text-white shadow-md`
+                      ? theme === 'light'
+                        ? 'bg-gray-900 text-white'
+                        : 'bg-white text-gray-900'
                       : theme === 'light'
-                        ? 'text-gray-600 hover:bg-gray-200'
-                        : 'text-gray-300 hover:bg-gray-600'
+                        ? 'bg-white text-gray-700 hover:bg-gray-50'
+                        : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
                   }`}
                 >
-                  <span>📊</span>
-                  <span className="hidden sm:inline">Detalle</span>
+                  Detalle
                 </button>
                 <button
                   onClick={() => setViewMode('map')}
-                  className={`px-4 py-2 rounded-md font-medium transition-all flex items-center gap-2 ${
+                  className={`px-4 py-2 text-sm transition-colors border-l ${
+                    theme === 'light' ? 'border-gray-300' : 'border-gray-600'
+                  } ${
                     viewMode === 'map'
-                      ? `${location === 'tandil' ? 'bg-blue-600' : 'bg-purple-600'} text-white shadow-md`
+                      ? theme === 'light'
+                        ? 'bg-gray-900 text-white'
+                        : 'bg-white text-gray-900'
                       : theme === 'light'
-                        ? 'text-gray-600 hover:bg-gray-200'
-                        : 'text-gray-300 hover:bg-gray-600'
+                        ? 'bg-white text-gray-700 hover:bg-gray-50'
+                        : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
                   }`}
                 >
-                  <span>🗺️</span>
-                  <span className="hidden sm:inline">Mapa</span>
+                  Mapa
                 </button>
               </div>
               
-              {/* 🔔 Campanita de Notificaciones */}
               <NotificationBell />
               
-              {/* 🌓 Toggle de Tema - Más pequeño y solo iconos */}
-              <div className={`rounded-lg p-0.5 flex gap-0.5 transition-colors duration-300 ${
-                theme === 'light' ? 'bg-gray-100' : 'bg-gray-700'
-              }`}>
-                <button
-                  onClick={() => setTheme('light')}
-                  className={`p-1.5 rounded-md text-sm transition-all ${
-                    theme === 'light'
-                      ? 'bg-gray-800 shadow-md'
-                      : 'hover:bg-gray-600'
-                  }`}
-                  title="Tema claro"
-                >
-                  <span>☀️</span>
-                </button>
-                <button
-                  onClick={() => setTheme('dark')}
-                  className={`p-1.5 rounded-md text-sm transition-all ${
-                    theme === 'dark'
-                      ? 'bg-white shadow-md'
-                      : 'hover:bg-gray-600'
-                  }`}
-                  title="Tema oscuro"
-                >
-                  <span>🌙</span>
-                </button>
-              </div>
+              {/* Tema - más estrecho con icono minimalista */}
+              <button
+                onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+                className={`px-2 py-2 rounded-md border transition-colors ${
+                  theme === 'light'
+                    ? 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                    : 'bg-gray-800 border-gray-600 text-gray-300 hover:bg-gray-700'
+                }`}
+                aria-label="Cambiar tema"
+                title={theme === 'light' ? 'Modo oscuro' : 'Modo claro'}
+              >
+                {theme === 'light' ? (
+                  // Icono luna (modo oscuro) - solo líneas
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+                  </svg>
+                ) : (
+                  // Icono sol (modo claro) - solo líneas
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="5" />
+                    <line x1="12" y1="1" x2="12" y2="3" />
+                    <line x1="12" y1="21" x2="12" y2="23" />
+                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+                    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+                    <line x1="1" y1="12" x2="3" y2="12" />
+                    <line x1="21" y1="12" x2="23" y2="12" />
+                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+                  </svg>
+                )}
+              </button>
             </div>
+          </div>
+          
+          {/* Info bar */}
+          <div className={`mt-3 flex items-center gap-6 text-xs ${
+            theme === 'light' ? 'text-gray-500' : 'text-gray-400'
+          }`}>
+            <span>Hora actual: {currentTime}</span>
+            {lastUpdate && <span>Última actualización: {lastUpdate}</span>}
           </div>
         </div>
       </header>
 
-      {/* 📊 Contenido principal */}
-      <main className="container mx-auto px-4 py-8">
+      {/* Contenido principal */}
+      <main className="container mx-auto px-6 py-8">
         
-        {/* Estado de carga */}
         {loading && (
           <div className="flex items-center justify-center h-64">
-            <div className="text-center">
-              <div className={`animate-spin rounded-full h-16 w-16 border-b-4 mx-auto mb-4 ${
-                location === 'tandil' ? 'border-blue-600' : 'border-purple-600'
-              }`}></div>
-              <p className={`text-lg transition-colors duration-300 ${
-                theme === 'light' ? 'text-gray-600' : 'text-gray-300'
-              }`}>Cargando datos...</p>
+            <div className={`text-sm ${
+              theme === 'light' ? 'text-gray-500' : 'text-gray-400'
+            }`}>
+              Cargando datos...
             </div>
           </div>
         )}
 
-        {/* Error */}
         {error && !loading && (
-          <div className={`border px-6 py-4 rounded-lg mb-6 transition-colors duration-300 ${
+          <div className={`border rounded-lg px-6 py-4 ${
             theme === 'light'
-              ? 'bg-red-100 border-red-400 text-red-700'
-              : 'bg-red-900/30 border-red-700 text-red-300'
+              ? 'bg-red-50 border-red-200 text-red-700'
+              : 'bg-red-900/20 border-red-800 text-red-300'
           }`}>
-            <p className="font-bold">Error al cargar datos</p>
-            <p>{error}</p>
+            <div className="text-sm">Error: {error}</div>
             <button 
               onClick={fetchSensors}
-              className={`mt-3 px-4 py-2 rounded transition ${
+              className={`mt-3 px-4 py-2 rounded-md text-sm ${
                 theme === 'light'
                   ? 'bg-red-600 hover:bg-red-700 text-white'
                   : 'bg-red-700 hover:bg-red-600 text-white'
@@ -318,230 +288,100 @@ export default function Home() {
           </div>
         )}
 
-        {/* Contenido principal: Tarjetas y Gráficos o Mapa */}
-        {!loading && !error && (
+        {!loading && !error && location === 'tandil' && (
           <>
-            {/* ========================================
-                 🏔️ TANDIL - USITTEL
-                ======================================== */}
-            {location === 'tandil' && (
-              <>
-                {/* 🗺️ VISTA MAPA */}
-                {viewMode === 'map' && (
-                  <div className="h-[calc(100vh-200px)] mb-8 -mx-4">
-                    <MapView sensors={sensors} />
-                  </div>
-                )}
-
-                {/* 📊 VISTA DETALLE (tarjetas + gráficos) */}
-                {viewMode === 'cards' && (
-                  <>
-                    {/* Tarjetas de sensores - Layout en 5 columnas */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-8">
-                      {sensors.map((sensor) => (
-                        <SensorCard 
-                          key={sensor.id}
-                          {...sensor}
-                          theme={theme}
-                        />
-                      ))}
-                    </div>
-
-                    {/* 📈 Gráficos de PRTG - Grid de iframes */}
-                    <div className="space-y-6">
-                      <div className={`px-6 py-4 rounded-t-lg transition-colors duration-300 ${
-                        theme === 'light'
-                          ? 'bg-gradient-to-r from-blue-600 to-indigo-600'
-                          : 'bg-gradient-to-r from-blue-800 to-indigo-900 border border-blue-700'
-                      }`}>
-                        <h2 className="text-xl font-bold text-white">Gráficos Históricos (PRTG)</h2>
-                        <div className="flex items-center justify-between">
-                          <p className={`text-sm ${theme === 'light' ? 'text-blue-100' : 'text-blue-200'}`}>
-                            Últimas 2 horas de tráfico por sensor
-                          </p>
-                          <p className={`text-xs ${theme === 'light' ? 'text-blue-100' : 'text-blue-200'}`}>
-                            🕐 Actualización: {currentTime || lastUpdate}
-                          </p>
-                        </div>
-                      </div>
-                      
-                      {/* Grid de gráficos - Imágenes PNG de PRTG */}
-                      <div className="grid grid-cols-1 gap-6 px-4">
-                        {sensors.map((sensor) => (
-                          <div key={sensor.id} className={`rounded-lg shadow-lg overflow-hidden border-2 transition-colors duration-300 ${
-                            theme === 'light'
-                              ? 'bg-white border-gray-100'
-                              : 'bg-gray-800 border-gray-700'
-                          }`}>
-                            <div className={`px-4 py-2 border-b transition-colors duration-300 ${
-                              theme === 'light'
-                                ? 'bg-gray-50 border-gray-200'
-                                : 'bg-gray-700 border-gray-600'
-                            }`}>
-                              <h3 className={`font-semibold transition-colors duration-300 ${
-                                theme === 'light' ? 'text-gray-800' : 'text-gray-200'
-                              }`}>{sensor.name}</h3>
-                            </div>
-                            <div className={`relative p-4 transition-colors duration-300 ${
-                              theme === 'light' ? 'bg-white' : 'bg-gray-800'
-                            }`}>
-                              <img
-                                src={`http://38.253.65.250:8080/chart.png?type=graph&graphid=0&id=${sensor.id}&width=1200&height=400&username=nocittel&passhash=413758319&_=${graphTimestamp}`}
-                                alt={`Gráfico ${sensor.name}`}
-                                className="w-full h-auto"
-                                loading="lazy"
-                                key={graphTimestamp}
-                              />
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </>
-                )}
-              </>
+            {viewMode === 'map' && (
+              <div className="h-[calc(100vh-200px)] -mx-6">
+                <MapView sensors={sensors} />
+              </div>
             )}
 
-            {/* ========================================
-                 🏙️ MATANZA - LARANET
-                ======================================== */}
-            {location === 'matanza' && (
+            {viewMode === 'cards' && (
               <>
-                {/* 🗺️ VISTA MAPA - MATANZA */}
-                {viewMode === 'map' && (
-                  <div className={`h-[calc(100vh-200px)] mb-8 -mx-4 rounded-lg shadow-lg flex items-center justify-center transition-colors duration-300 ${
-                    theme === 'light' ? 'bg-white' : 'bg-gray-800 border border-gray-700'
+                {/* Grid de sensores */}
+                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
+                  {sensors.map((sensor) => (
+                    <SensorCard 
+                      key={sensor.id}
+                      {...sensor}
+                      theme={theme}
+                    />
+                  ))}
+                </div>
+
+                {/* Gráficos */}
+                <div className={`rounded-lg border overflow-hidden ${
+                  theme === 'light'
+                    ? 'bg-white border-gray-200'
+                    : 'bg-gray-800 border-gray-700'
+                }`}>
+                  <div className={`px-6 py-4 border-b ${
+                    theme === 'light' ? 'border-gray-200' : 'border-gray-700'
                   }`}>
-                    <div className="text-center p-12">
-                      <div className="text-6xl mb-4">🏙️</div>
-                      <h3 className={`text-2xl font-bold mb-2 transition-colors duration-300 ${
-                        theme === 'light' ? 'text-gray-800' : 'text-gray-200'
-                      }`}>Mapa de Matanza</h3>
-                      <p className={`transition-colors duration-300 ${
-                        theme === 'light' ? 'text-gray-600' : 'text-gray-400'
-                      }`}>Próximamente: Vista de mapa para LaraNet Matanza</p>
-                    </div>
-                  </div>
-                )}
-
-                {/* 📊 VISTA DETALLE - MATANZA */}
-                {viewMode === 'cards' && (
-                  <div className="space-y-6">
-                    {/* Banner informativo */}
-                    <div className={`rounded-lg shadow-xl p-8 text-white text-center transition-colors duration-300 ${
-                      theme === 'light'
-                        ? 'bg-gradient-to-r from-purple-600 to-pink-600'
-                        : 'bg-gradient-to-r from-purple-800 to-pink-900 border border-purple-700'
+                    <div className={`text-sm font-medium ${
+                      theme === 'light' ? 'text-gray-900' : 'text-white'
                     }`}>
-                      <div className="text-5xl mb-4">🏙️</div>
-                      <h2 className="text-3xl font-bold mb-2">LaraNet Matanza</h2>
-                      <p className={`text-lg ${theme === 'light' ? 'text-purple-100' : 'text-purple-200'}`}>
-                        Sistema de monitoreo en configuración
-                      </p>
+                      Gráficos históricos
                     </div>
-
-                    {/* Grid de tarjetas placeholder */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                      {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-                        <div key={i} className={`rounded-xl shadow-lg p-6 border-2 animate-pulse transition-colors duration-300 ${
-                          theme === 'light'
-                            ? 'bg-white border-purple-200'
-                            : 'bg-gray-800 border-purple-700'
-                        }`}>
-                          <div className="flex items-center justify-between mb-4">
-                            <div className={`h-6 rounded w-32 ${
-                              theme === 'light' ? 'bg-gray-200' : 'bg-gray-700'
-                            }`}></div>
-                            <div className={`w-4 h-4 rounded-full ${
-                              theme === 'light' ? 'bg-gray-300' : 'bg-gray-600'
-                            }`}></div>
-                          </div>
-                          <div className={`h-4 rounded w-24 mb-4 ${
-                            theme === 'light' ? 'bg-gray-200' : 'bg-gray-700'
-                          }`}></div>
-                          <div className={`h-10 rounded w-full mb-4 ${
-                            theme === 'light' ? 'bg-gray-200' : 'bg-gray-700'
-                          }`}></div>
-                          <div className={`h-4 rounded w-full ${
-                            theme === 'light' ? 'bg-gray-200' : 'bg-gray-700'
-                          }`}></div>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Sección de gráficos placeholder */}
-                    <div className="space-y-6 mt-8">
-                      <div className={`px-6 py-4 rounded-t-lg transition-colors duration-300 ${
-                        theme === 'light'
-                          ? 'bg-gradient-to-r from-purple-600 to-pink-600'
-                          : 'bg-gradient-to-r from-purple-800 to-pink-900 border border-purple-700'
-                      }`}>
-                        <h2 className="text-xl font-bold text-white">Gráficos Históricos</h2>
-                        <p className={`text-sm ${theme === 'light' ? 'text-purple-100' : 'text-purple-200'}`}>
-                          Datos de sensores LaraNet - Próximamente
-                        </p>
-                      </div>
-                      
-                      <div className="grid grid-cols-1 gap-6 px-4">
-                        {[1, 2, 3, 4, 5, 6].map((i) => (
-                          <div key={i} className={`rounded-lg shadow-lg overflow-hidden border-2 transition-colors duration-300 ${
-                            theme === 'light'
-                              ? 'bg-white border-purple-100'
-                              : 'bg-gray-800 border-purple-700'
-                          }`}>
-                            <div className={`px-4 py-2 border-b transition-colors duration-300 ${
-                              theme === 'light'
-                                ? 'bg-purple-50 border-purple-200'
-                                : 'bg-purple-900/30 border-purple-700'
-                            }`}>
-                              <div className={`h-6 rounded w-48 animate-pulse ${
-                                theme === 'light' ? 'bg-purple-200' : 'bg-purple-700'
-                              }`}></div>
-                            </div>
-                            <div className={`relative p-4 h-96 flex items-center justify-center transition-colors duration-300 ${
-                              theme === 'light' ? 'bg-gray-50' : 'bg-gray-900'
-                            }`}>
-                              <div className="text-center">
-                                <div className="text-4xl mb-3">📊</div>
-                                <p className={`font-medium transition-colors duration-300 ${
-                                  theme === 'light' ? 'text-gray-500' : 'text-gray-400'
-                                }`}>Gráfico {i}</p>
-                                <p className={`text-sm transition-colors duration-300 ${
-                                  theme === 'light' ? 'text-gray-400' : 'text-gray-500'
-                                }`}>En configuración</p>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
+                    <div className={`text-xs mt-1 ${
+                      theme === 'light' ? 'text-gray-500' : 'text-gray-400'
+                    }`}>
+                      Últimas 2 horas de tráfico
                     </div>
                   </div>
-                )}
+                  
+                  <div className="divide-y">
+                    {sensors.map((sensor) => (
+                      <div key={sensor.id} className={`p-6 ${
+                        theme === 'light' ? 'divide-gray-200' : 'divide-gray-700'
+                      }`}>
+                        <div className={`text-sm mb-4 ${
+                          theme === 'light' ? 'text-gray-700' : 'text-gray-300'
+                        }`}>
+                          {sensor.name}
+                        </div>
+                        <img
+                          src={`http://38.253.65.250:8080/chart.png?type=graph&graphid=0&id=${sensor.id}&width=1200&height=400&username=nocittel&passhash=413758319&_=${graphTimestamp}`}
+                          alt={`Gráfico ${sensor.name}`}
+                          className="w-full h-auto"
+                          loading="lazy"
+                          key={graphTimestamp}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </>
             )}
           </>
         )}
 
+        {!loading && !error && location === 'matanza' && (
+          <div className={`rounded-lg border text-center py-16 ${
+            theme === 'light'
+              ? 'bg-white border-gray-200'
+              : 'bg-gray-800 border-gray-700'
+          }`}>
+            <div className={`text-sm ${
+              theme === 'light' ? 'text-gray-600' : 'text-gray-400'
+            }`}>
+              Sistema LARANET La Matanza en configuración
+            </div>
+          </div>
+        )}
+
       </main>
 
-      {/* 📝 Footer */}
-      <footer className={`border-t mt-12 transition-colors duration-300 ${
+      {/* Footer minimalista */}
+      <footer className={`border-t mt-12 ${
         theme === 'light'
           ? 'bg-white border-gray-200'
           : 'bg-gray-800 border-gray-700'
       }`}>
-        <div className={`container mx-auto px-4 py-6 text-center transition-colors duration-300 ${
-          theme === 'light' ? 'text-gray-600' : 'text-gray-300'
+        <div className={`container mx-auto px-6 py-4 text-center text-xs ${
+          theme === 'light' ? 'text-gray-500' : 'text-gray-400'
         }`}>
-          <p className="font-semibold">
-            {location === 'tandil' ? 'Dashboard USITTEL' : 'Dashboard LARANET'} - Monitoreo en Tiempo Real
-          </p>
-          <p className="text-sm mt-2">
-            {location === 'tandil' 
-              ? 'Tarjetas: actualizadas cada 2 minutos | Gráficos: proporcionados por PRTG'
-              : 'Sistema LaraNet en configuración - Próximamente datos en tiempo real'
-            }
-          </p>
+          Dashboard ITTEL - Monitoreo en tiempo real - Actualización automática cada 2 minutos
         </div>
       </footer>
     </div>

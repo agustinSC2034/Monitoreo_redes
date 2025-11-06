@@ -50,30 +50,42 @@ export async function GET() {
       
       const sensorId = String(sensor.objid || sensor.objid_raw || 'unknown');
       
-      // Parsear lastcheck de forma determinística desde la cadena dd/MM/yyyy HH:mm:ss en UTC
-      let lastCheckFormatted = sensor.lastcheck || '';
-      const extractAndFormatUTCMinus3 = (source: string) => {
-        // 1) Quitar HTML si viene con etiquetas
-        const plain = source.replace(/<[^>]*>/g, ' ');
-        // 2) Buscar patrón dd/mm/yyyy hh:mm:ss
-        const m = plain.match(/(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2}):(\d{2})/);
-        if (!m) return source; // si no encontramos, devolvemos original
-        const [, dd, mm, yyyy, HH, MM, SS] = m;
-        // Construir fecha como UTC
-        const utcMs = Date.UTC(parseInt(yyyy), parseInt(mm) - 1, parseInt(dd), parseInt(HH), parseInt(MM), parseInt(SS));
-        // Restar 3 horas (Argentina)
-        const argDate = new Date(utcMs - (3 * 60 * 60 * 1000));
-        const day = String(argDate.getUTCDate()).padStart(2, '0');
-        const month = String(argDate.getUTCMonth() + 1).padStart(2, '0');
-        const year = argDate.getUTCFullYear();
-        const hours = String(argDate.getUTCHours()).padStart(2, '0');
-        const minutes = String(argDate.getUTCMinutes()).padStart(2, '0');
-        const seconds = String(argDate.getUTCSeconds()).padStart(2, '0');
-        return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
-      };
-
-      if (typeof lastCheckFormatted === 'string') {
-        lastCheckFormatted = extractAndFormatUTCMinus3(lastCheckFormatted);
+      // ⏰ Ajustar timezone del lastcheck
+      let adjustedLastCheck = sensor.lastcheck || '';
+      if (typeof adjustedLastCheck === 'string' && adjustedLastCheck) {
+        console.log(`[DEBUG-TZ] Original: "${adjustedLastCheck}"`);
+        // Quitar HTML y texto "[hace X]"
+        const clean = adjustedLastCheck
+          .replace(/<[^>]*>/g, '') // Quitar tags HTML
+          .replace(/\[hace[^\]]*\]/g, '') // Quitar "[hace X s]"
+          .trim();
+        console.log(`[DEBUG-TZ] Limpio: "${clean}"`);
+        // Buscar fecha d/m/yyyy o dd/mm/yyyy hh:mm:ss (1 o 2 dígitos en día y mes)
+        const match = clean.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{2}):(\d{2}):(\d{2})/);
+        console.log(`[DEBUG-TZ] Match resultado:`, match);
+        if (match) {
+          const [, dd, mm, yyyy, HH, MM, SS] = match;
+          // Parsear como UTC y restar 3 horas
+          const utcDate = new Date(Date.UTC(
+            parseInt(yyyy),
+            parseInt(mm) - 1,
+            parseInt(dd),
+            parseInt(HH),
+            parseInt(MM),
+            parseInt(SS)
+          ));
+          // Restar 3 horas (3 * 60 * 60 * 1000 ms)
+          utcDate.setTime(utcDate.getTime() - (3 * 60 * 60 * 1000));
+          // Formatear de vuelta
+          const day = String(utcDate.getUTCDate()).padStart(2, '0');
+          const month = String(utcDate.getUTCMonth() + 1).padStart(2, '0');
+          const year = utcDate.getUTCFullYear();
+          const hours = String(utcDate.getUTCHours()).padStart(2, '0');
+          const minutes = String(utcDate.getUTCMinutes()).padStart(2, '0');
+          const seconds = String(utcDate.getUTCSeconds()).padStart(2, '0');
+          adjustedLastCheck = `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
+          console.log(`[TIMEZONE] Ajustado: ${sensor.lastcheck} -> ${adjustedLastCheck}`);
+        }
       }
       
       return {
@@ -83,7 +95,7 @@ export async function GET() {
         status: sensor.status || 'Unknown',
         statusRaw: sensor.status_raw || 0,
         lastValue: sensor.lastvalue || 'N/A',
-        lastCheck: lastCheckFormatted,
+        lastCheck: adjustedLastCheck,
         message: sensor.message || 'Sin mensaje',
         priority: sensor.priority || 3
       };
