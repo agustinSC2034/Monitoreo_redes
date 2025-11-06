@@ -5,8 +5,9 @@
  * Body: { recipient: "email@example.com" }
  */
 
+import { sendAlertEmail, sendTestEmail, verifyEmailConfig } from '@/lib/emailService';
+
 import { NextResponse } from 'next/server';
-import { sendTestEmail, verifyEmailConfig, sendAlertEmail } from '@/lib/emailService';
 
 export async function POST(req: Request) {
   try {
