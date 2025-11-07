@@ -32,6 +32,78 @@ const lastKnownStates = new Map<string, {
 // Mapa para trackear últimas alertas enviadas (cooldown)
 const lastAlertTimes = new Map<string, number>();
 
+// 🆕 Mapa para trackear últimos checks de historial (evitar duplicados)
+const lastHistoryChecks = new Map<string, number>();
+
+/**
+ * 🚨 Revisar historial PRTG para detectar bajones intermedios
+ * 
+ * Esta función consulta el historial de PRTG de los últimos 2 minutos
+ * para detectar eventos DOWN/WARNING que pudieron ocurrir entre polling.
+ */
+async function checkHistoricalDowntime(sensor: SensorHistory) {
+  const sensorId = sensor.sensor_id;
+  
+  // Evitar consultar historial muy seguido (máximo cada 30 segundos)
+  const lastCheck = lastHistoryChecks.get(sensorId);
+  const now = Math.floor(Date.now() / 1000);
+  
+  if (lastCheck && (now - lastCheck) < 30) {
+    return; // Muy reciente, skip
+  }
+  
+  lastHistoryChecks.set(sensorId, now);
+  
+  try {
+    // Importar prtgClient dinámicamente para evitar dependencia circular
+    const { default: prtgClient } = await import('./prtgClient');
+    
+    // Consultar últimos 2 minutos de historial
+    const events = await prtgClient.detectRecentDowntime(parseInt(sensorId), 2);
+    
+    if (events.length === 0) {
+      return; // No hay eventos, todo bien
+    }
+    
+    // Procesar eventos encontrados
+    for (const event of events) {
+      // Si el evento es reciente (últimos 2 minutos) y es DOWN/WARNING
+      if (event.status_raw === 5 || event.status_raw === 4) {
+        console.log(`🚨 [HISTORY] Bajón detectado en historial: ${sensor.sensor_name} - ${event.status}`);
+        
+        // Crear datos de sensor con el estado histórico
+        const historicalSensor: SensorHistory = {
+          ...sensor,
+          status: event.status,
+          status_raw: event.status_raw,
+          timestamp: event.timestamp
+        };
+        
+        // Guardar el evento histórico
+        await saveSensorHistory(historicalSensor);
+        
+        // Crear cambio de estado
+        const change: StatusChange = {
+          sensor_id: sensor.sensor_id,
+          sensor_name: sensor.sensor_name,
+          old_status: 'Up',
+          new_status: event.status,
+          duration: now - event.timestamp, // Duración aproximada
+          timestamp: event.timestamp
+        };
+        
+        await saveStatusChange(change);
+        
+        // Verificar si hay que disparar alertas
+        await checkAndTriggerAlerts(historicalSensor, change);
+      }
+    }
+    
+  } catch (error) {
+    console.error('❌ Error al revisar historial:', error);
+  }
+}
+
 /**
  * 📊 Procesar estado de sensor y guardar historial
  */
@@ -51,13 +123,16 @@ export async function processSensorData(sensor: any) {
   
   try {
     // Guardar en historial
-    saveSensorHistory(historyData);
+    await saveSensorHistory(historyData);
+    
+    // 🚨 NUEVO: Revisar historial PRTG para detectar bajones intermedios
+    await checkHistoricalDowntime(historyData);
     
     // Detectar cambio de estado
     await detectStatusChange(historyData);
     
     // Log del sistema
-    saveSystemLog({
+    await saveSystemLog({
       level: 'debug',
       category: 'sensor_monitor',
       message: `Sensor ${historyData.sensor_name} procesado: ${historyData.status}`,
@@ -66,7 +141,7 @@ export async function processSensorData(sensor: any) {
     
   } catch (error) {
     console.error('❌ Error al procesar sensor:', error);
-    saveSystemLog({
+    await saveSystemLog({
       level: 'error',
       category: 'sensor_monitor',
       message: `Error procesando sensor ${historyData.sensor_name}`,
@@ -117,12 +192,12 @@ async function detectStatusChange(current: SensorHistory) {
       timestamp: current.timestamp
     };
     
-    saveStatusChange(change);
+    await saveStatusChange(change);
     
     console.log(`🔄 Cambio de estado detectado: ${current.sensor_name} | ${lastKnown.status} → ${current.status}`);
     
     // Log del sistema
-    saveSystemLog({
+    await saveSystemLog({
       level: 'info',
       category: 'status_change',
       message: `${current.sensor_name}: ${lastKnown.status} → ${current.status} (duración: ${duration}s)`,
@@ -178,7 +253,7 @@ async function detectTrafficChange(
     console.log(`   Anterior: ${previousTraffic.toFixed(0)} Mbit/s → Actual: ${currentTraffic.toFixed(0)} Mbit/s`);
     
     // Log del sistema
-    saveSystemLog({
+    await saveSystemLog({
       level: 'warn',
       category: 'traffic_change',
       message: `${sensor.sensor_name}: ${changeType} drástico de tráfico (${absChange.toFixed(1)}%)`,
@@ -192,7 +267,7 @@ async function detectTrafficChange(
     });
     
     // Verificar si hay reglas para este tipo de cambio
-    const rules = getAlertRuleBySensor(sensor.sensor_id);
+    const rules = await getAlertRuleBySensor(sensor.sensor_id);
     for (const rule of rules) {
       if (
         (change > 0 && rule.condition === 'traffic_spike' && absChange > (rule.threshold || 50)) ||
@@ -227,7 +302,7 @@ async function detectTrafficChange(
  * 🎯 Verificar alertas de umbral (sin cambio de estado)
  */
 async function checkThresholdAlerts(sensor: SensorHistory) {
-  const rules = getAlertRuleBySensor(sensor.sensor_id);
+  const rules = await getAlertRuleBySensor(sensor.sensor_id);
   
   if (!rules || rules.length === 0) {
     return;
@@ -271,7 +346,7 @@ async function checkThresholdAlerts(sensor: SensorHistory) {
  */
 async function checkAndTriggerAlerts(sensor: SensorHistory, change: StatusChange) {
   // Obtener reglas de alerta para este sensor
-  const rules = getAlertRuleBySensor(sensor.sensor_id);
+  const rules = await getAlertRuleBySensor(sensor.sensor_id);
   
   if (!rules || rules.length === 0) {
     return; // No hay reglas configuradas
@@ -406,7 +481,7 @@ async function triggerAlert(rule: AlertRule, sensor: SensorHistory, change: Stat
     }
     
     // Guardar en historial de alertas
-    saveAlertHistory({
+    await saveAlertHistory({
       rule_id: rule.id!,
       sensor_id: sensor.sensor_id,
       sensor_name: sensor.sensor_name,
@@ -419,7 +494,7 @@ async function triggerAlert(rule: AlertRule, sensor: SensorHistory, change: Stat
     });
     
     // Log del sistema
-    saveSystemLog({
+    await saveSystemLog({
       level: channelResults.some(r => r.success) ? 'info' : 'error',
       category: 'alert',
       message: `Alerta disparada: ${rule.name} para ${sensor.sensor_name}`,
@@ -429,7 +504,7 @@ async function triggerAlert(rule: AlertRule, sensor: SensorHistory, change: Stat
     
   } catch (error) {
     console.error('❌ Error disparando alerta:', error);
-    saveSystemLog({
+    await saveSystemLog({
       level: 'error',
       category: 'alert',
       message: `Error disparando alerta: ${rule.name}`,

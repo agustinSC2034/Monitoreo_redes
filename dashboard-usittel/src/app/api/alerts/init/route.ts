@@ -21,7 +21,7 @@ export async function POST() {
 async function initAlerts() {
   try {
     // Verificar si ya hay reglas
-    const existingRules = getAlertRules(false);
+    const existingRules = await getAlertRules(false);
     
     if (existingRules.length > 0) {
       return NextResponse.json({
@@ -41,7 +41,7 @@ async function initAlerts() {
         recipients: ['noc@usittel.com'], // Cambiar por emails reales
         cooldown: 300, // 5 minutos
         priority: 'critical',
-        active: true
+        enabled: true
       },
       {
         name: '⚠️ CABASE - Alerta de Warning',
@@ -51,7 +51,7 @@ async function initAlerts() {
         recipients: ['noc@usittel.com'],
         cooldown: 600, // 10 minutos
         priority: 'high',
-        active: true
+        enabled: true
       },
       {
         name: '🔴 TECO - Alerta de Caída',
@@ -61,7 +61,7 @@ async function initAlerts() {
         recipients: ['noc@usittel.com'],
         cooldown: 300,
         priority: 'high',
-        active: true
+        enabled: true
       },
       {
         name: '🔴 IPLANxARSAT - Alerta de Caída',
@@ -71,7 +71,7 @@ async function initAlerts() {
         recipients: ['noc@usittel.com'],
         cooldown: 300,
         priority: 'critical',
-        active: true
+        enabled: true
       },
       {
         name: '🔴 RDA-WAN - Alerta de Caída',
@@ -81,7 +81,7 @@ async function initAlerts() {
         recipients: ['noc@usittel.com'],
         cooldown: 300,
         priority: 'critical',
-        active: true
+        enabled: true
       },
       {
         name: '🔴 RDB-DTV - Alerta de Caída',
@@ -91,16 +91,16 @@ async function initAlerts() {
         recipients: ['noc@usittel.com'],
         cooldown: 300,
         priority: 'high',
-        active: true
+        enabled: true
       }
     ];
     
     // Crear todas las reglas
     const created = [];
     for (const rule of defaultRules) {
-      const result = createAlertRule(rule);
+      const result = await createAlertRule(rule);
       created.push({
-        id: result.lastInsertRowid,
+        id: result?.id,
         ...rule
       });
     }

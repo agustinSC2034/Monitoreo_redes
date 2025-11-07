@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get('limit') || '100');
     
-    const history = getAlertHistory(limit);
+    const history = await getAlertHistory(limit);
     
     return NextResponse.json({
       success: true,

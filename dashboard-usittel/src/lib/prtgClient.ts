@@ -429,6 +429,123 @@ class PRTGClient {
       throw error;
     }
   }
+
+  /**
+   * 🚨 Detectar eventos DOWN/WARNING en historial reciente
+   * 
+   * Consulta el historial de los últimos minutos para encontrar
+   * cambios de estado que podrían haberse perdido entre polling.
+   * 
+   * Parámetros:
+   * - sensorId: ID del sensor a consultar
+   * - minutesAgo: Cuántos minutos hacia atrás revisar (default: 2)
+   * 
+   * Retorna: Array de eventos con { timestamp, status, duration }
+   */
+  async detectRecentDowntime(sensorId: number, minutesAgo: number = 2) {
+    const now = new Date();
+    const past = new Date(now.getTime() - minutesAgo * 60 * 1000);
+    
+    // Formato de fecha PRTG: YYYY-MM-DD-HH-MM-SS
+    const formatDate = (date: Date) => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      const seconds = String(date.getSeconds()).padStart(2, '0');
+      return `${year}-${month}-${day}-${hours}-${minutes}-${seconds}`;
+    };
+    
+    const startDate = formatDate(past);
+    const endDate = formatDate(now);
+    
+    console.log(`🔍 [HISTORY CHECK] Revisando historial del sensor ${sensorId} (últimos ${minutesAgo} minutos)...`);
+    
+    try {
+      // ⏱️ Aplicar rate limiting
+      await this.rateLimitDelay();
+      
+      const url = this.buildURL('/api/historicdata.xml', {
+        id: sensorId,
+        avg: 0, // Raw data (sin promedio)
+        sdate: startDate,
+        edate: endDate
+      });
+      
+      const response = await fetch(url);
+      if (!response.ok) {
+        console.warn(`⚠️ Error HTTP ${response.status} al consultar historial`);
+        return [];
+      }
+      
+      const xmlText = await response.text();
+      
+      // Extraer items del XML
+      const events: Array<{ timestamp: number; status: string; status_raw: number }> = [];
+      const itemRegex = /<item>([\s\S]*?)<\/item>/g;
+      let match;
+      
+      while ((match = itemRegex.exec(xmlText)) !== null) {
+        const itemContent = match[1];
+        
+        // Extraer timestamp
+        const datetimeRaw = itemContent.match(/<datetime_raw>(.*?)<\/datetime_raw>/)?.[1];
+        if (!datetimeRaw) continue;
+        
+        const excelDate = parseFloat(datetimeRaw);
+        const unixTimestamp = Math.floor((excelDate - 25569) * 86400);
+        
+        // Extraer estado del sensor (buscar coverage en el XML)
+        // PRTG incluye <coverage> con el porcentaje de uptime
+        // Y también <value_raw channel="Downtime"> para tiempo caído
+        const downtimeMatch = itemContent.match(/<value_raw channel="Downtime">(.*?)<\/value_raw>/);
+        const coverageMatch = itemContent.match(/<coverage>(.*?)<\/coverage>/);
+        
+        // Si hay downtime > 0, el sensor estuvo DOWN
+        let status = 'Up';
+        let status_raw = 3; // 3 = Up en PRTG
+        
+        if (downtimeMatch) {
+          const downtime = parseFloat(downtimeMatch[1]);
+          if (downtime > 0) {
+            status = 'Down';
+            status_raw = 5; // 5 = Down en PRTG
+          }
+        }
+        
+        // También revisar si coverage < 100% indica problema
+        if (coverageMatch) {
+          const coverage = parseInt(coverageMatch[1]);
+          if (coverage < 100 && status === 'Up') {
+            status = 'Warning';
+            status_raw = 4; // 4 = Warning en PRTG
+          }
+        }
+        
+        events.push({
+          timestamp: unixTimestamp,
+          status,
+          status_raw
+        });
+      }
+      
+      // Filtrar solo eventos DOWN o WARNING
+      const downtimeEvents = events.filter(e => e.status_raw === 5 || e.status_raw === 4);
+      
+      if (downtimeEvents.length > 0) {
+        console.log(`🚨 [HISTORY CHECK] Se encontraron ${downtimeEvents.length} eventos de problema en historial`);
+      } else {
+        console.log(`✅ [HISTORY CHECK] No se encontraron problemas en historial`);
+      }
+      
+      return downtimeEvents;
+      
+    } catch (error) {
+      console.error('❌ Error al consultar historial reciente:', error);
+      return [];
+    }
+  }
 }
 
 // 🎯 Exportar una ÚNICA instancia del cliente (Singleton)

@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const activeOnly = searchParams.get('active') !== 'false';
     
-    const rules = getAlertRules(activeOnly);
+    const rules = await getAlertRules(activeOnly);
     
     return NextResponse.json({
       success: true,
@@ -65,22 +65,18 @@ export async function POST(request: NextRequest) {
       sensor_id: body.sensor_id,
       condition: body.condition,
       threshold: body.threshold,
-      duration: body.duration,
       channels: body.channels || ['email'],
       recipients: body.recipients || [],
       cooldown: body.cooldown || 300, // 5 minutos por defecto
       priority: body.priority || 'medium',
-      active: body.active !== false
+      enabled: body.enabled !== false
     };
     
-    const result = createAlertRule(rule);
+    const result = await createAlertRule(rule);
     
     return NextResponse.json({
       success: true,
-      data: {
-        id: result.lastInsertRowid,
-        ...rule
-      },
+      data: result,
       message: 'Regla de alerta creada correctamente'
     });
   } catch (error) {
@@ -111,11 +107,10 @@ export async function PATCH(request: NextRequest) {
       );
     }
     
-    const result = updateAlertRule(body.id, body);
+    await updateAlertRule(body.id, body);
     
     return NextResponse.json({
       success: true,
-      data: result,
       message: 'Regla actualizada correctamente'
     });
   } catch (error) {
@@ -147,11 +142,10 @@ export async function DELETE(request: NextRequest) {
       );
     }
     
-    const result = deleteAlertRule(parseInt(id));
+    await deleteAlertRule(parseInt(id));
     
     return NextResponse.json({
       success: true,
-      data: result,
       message: 'Regla eliminada correctamente'
     });
   } catch (error) {
