@@ -12,7 +12,7 @@ import { createAlertRule, getAlertRules } from '@/lib/db';
 export async function POST(request: NextRequest) {
   try {
     // Verificar si ya existe la regla
-    const existingRules = getAlertRules(false);
+    const existingRules = await getAlertRules(false);
     const testRuleExists = existingRules.find(r => r.name === 'PRUEBA: CABASE Umbral Alto');
     
     if (testRuleExists) {
@@ -33,17 +33,17 @@ export async function POST(request: NextRequest) {
       recipients: [process.env.ALERT_EMAIL_RECIPIENTS || 'agustin.scutari@it-tel.com.ar'],
       cooldown: 60, // 1 minuto (para pruebas, después aumentar)
       priority: 'medium' as const,
-      active: true
+      enabled: true
     };
     
-    const result = createAlertRule(testRule);
+    const result = await createAlertRule(testRule);
     
     console.log('✅ Regla de prueba creada:', testRule);
     
     return NextResponse.json({
       success: true,
       message: 'Regla de prueba creada exitosamente',
-      rule: { ...testRule, id: result.lastInsertRowid },
+      rule: { ...testRule, id: result?.id },
       info: {
         sensor: 'CABASE (13682)',
         condition: 'Tráfico > 5000 Mbit/s',
