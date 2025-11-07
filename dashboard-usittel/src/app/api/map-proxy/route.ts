@@ -1,12 +1,8 @@
 /**
- * 🗺️ Proxy para mapa PRTG y recursos relacionados
+ * 🗺️ Proxy Universal para PRTG
  * 
- * Soluciona el problema de Mixed Content para el iframe del mapa
- * Maneja tanto el HTML como todos los recursos (JS, CSS, imágenes)
- * 
- * Uso:
- * - /api/map-proxy (sin params) → HTML del mapa
- * - /api/map-proxy?path=/api/somefile.js → Recurso específico
+ * Proxy completo que maneja el mapa y TODOS sus recursos
+ * Reescribe URLs dinámicamente para que funcionen via HTTPS
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -17,38 +13,40 @@ export async function GET(request: NextRequest) {
     const PRTG_USERNAME = process.env.PRTG_USERNAME || 'nocittel';
     const PRTG_PASSHASH = process.env.PRTG_PASSHASH || '413758319';
     
-    // Obtener path solicitado (para recursos adicionales)
+    // Obtener path solicitado desde query params
     const searchParams = request.nextUrl.searchParams;
-    const resourcePath = searchParams.get('path');
+    const resourcePath = searchParams.get('path') || '';
     
     let targetUrl: string;
     
     if (resourcePath) {
-      // Proxy para recurso específico (JS, CSS, imagen, etc)
+      // Recurso específico (JS, CSS, JSON, imagen, etc)
       targetUrl = `${PRTG_BASE_URL}${resourcePath}`;
-      
-      // Agregar credenciales si el recurso las requiere
-      if (!resourcePath.includes('username=')) {
-        const separator = resourcePath.includes('?') ? '&' : '?';
-        targetUrl += `${separator}username=${PRTG_USERNAME}&passhash=${PRTG_PASSHASH}`;
-      }
     } else {
-      // Proxy para el mapa principal
+      // Mapa principal
       targetUrl = `${PRTG_BASE_URL}/public/mapshow.htm?id=2197&mapid=7418EC41-A903-47CF-87A2-70E6CC8AAFF5`;
     }
     
-    console.log('🗺️ Map-proxy fetching:', targetUrl);
+    // Agregar credenciales si no están
+    if (!targetUrl.includes('username=') && !targetUrl.includes('passhash=')) {
+      const separator = targetUrl.includes('?') ? '&' : '?';
+      targetUrl += `${separator}username=${PRTG_USERNAME}&passhash=${PRTG_PASSHASH}`;
+    }
     
-    // Descargar recurso desde PRTG
+    console.log('🗺️ [MAP-PROXY] Fetching:', targetUrl);
+    
+    // Fetch del recurso
     const response = await fetch(targetUrl, {
       cache: 'no-store',
       headers: {
-        'User-Agent': 'Mozilla/5.0'
+        'User-Agent': 'Mozilla/5.0',
+        'Accept': '*/*'
       }
     });
     
     if (!response.ok) {
-      throw new Error(`PRTG returned ${response.status} for ${targetUrl}`);
+      console.error(`❌ [MAP-PROXY] Error ${response.status} for ${targetUrl}`);
+      throw new Error(`PRTG returned ${response.status}`);
     }
     
     const contentType = response.headers.get('content-type') || 'text/html';
@@ -57,42 +55,75 @@ export async function GET(request: NextRequest) {
     if (contentType.includes('text/html')) {
       let html = await response.text();
       
-      // Reemplazar todas las URLs absolutas de PRTG por el proxy
+      // Reescribir todas las URLs absolutas de PRTG
       html = html.replace(
-        /http:\/\/38\.253\.65\.250:8080(\/[^"'\s]+)/g,
-        '/api/map-proxy?path=$1'
+        /http:\/\/38\.253\.65\.250:8080/g,
+        '/api/map-proxy?path='
       );
       
-      // También reemplazar URLs relativas que empiecen con /
+      // Reescribir URLs relativas que empiecen con / (paths absolutos)
       html = html.replace(
-        /(['"])(\/(?:api|css|javascript|images|public)[^"']+)(['"])/g,
-        '$1/api/map-proxy?path=$2$3'
+        /(['"\(])(\/(api|public|javascript|css|images|webapplib)[^'"\)]*)/g,
+        '$1/api/map-proxy?path=$2'
+      );
+      
+      // Reescribir src y href sin dominio
+      html = html.replace(
+        /(src|href)=(["'])\/([^"']*)(["'])/g,
+        '$1=$2/api/map-proxy?path=/$3$4'
       );
       
       return new NextResponse(html, {
         status: 200,
         headers: {
           'Content-Type': 'text/html; charset=utf-8',
-          'Cache-Control': 'no-cache, no-store, must-revalidate'
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Access-Control-Allow-Origin': '*'
         }
       });
     }
     
-    // Para otros tipos de archivo (JS, CSS, imágenes), pasar directamente
+    // Si es JavaScript, reescribir URLs también
+    if (contentType.includes('javascript') || contentType.includes('json')) {
+      let content = await response.text();
+      
+      // Reescribir URLs en JavaScript
+      content = content.replace(
+        /http:\/\/38\.253\.65\.250:8080/g,
+        '/api/map-proxy?path='
+      );
+      
+      // Reescribir paths relativos en strings
+      content = content.replace(
+        /(['"])(\/(api|public|javascript|css|images|webapplib)[^'"]*)/g,
+        '$1/api/map-proxy?path=$2'
+      );
+      
+      return new NextResponse(content, {
+        status: 200,
+        headers: {
+          'Content-Type': contentType,
+          'Cache-Control': 'public, max-age=3600',
+          'Access-Control-Allow-Origin': '*'
+        }
+      });
+    }
+    
+    // Para otros tipos (imágenes, CSS, etc), pasar directamente
     const buffer = await response.arrayBuffer();
     
     return new NextResponse(buffer, {
       status: 200,
       headers: {
         'Content-Type': contentType,
-        'Cache-Control': 'public, max-age=3600' // Cache estático por 1 hora
+        'Cache-Control': 'public, max-age=3600',
+        'Access-Control-Allow-Origin': '*'
       }
     });
     
   } catch (error) {
-    console.error('❌ Error en map-proxy:', error);
+    console.error('❌ [MAP-PROXY] Error:', error);
     
-    // Retornar página de error amigable
     return new NextResponse(
       `<!DOCTYPE html>
       <html>
@@ -107,7 +138,7 @@ export async function GET(request: NextRequest) {
             <p style="color: #999; font-size: 14px; font-family: monospace; background: #f9f9f9; padding: 12px; border-radius: 6px;">
               ${error instanceof Error ? error.message : 'Error desconocido'}
             </p>
-            <button onclick="window.location.reload()" style="margin-top: 20px; padding: 10px 24px; background: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px;">
+            <button onclick="window.parent.location.reload()" style="margin-top: 20px; padding: 10px 24px; background: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px;">
               🔄 Reintentar
             </button>
           </div>
