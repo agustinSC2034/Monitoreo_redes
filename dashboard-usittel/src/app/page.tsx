@@ -341,7 +341,7 @@ export default function Home() {
                           {sensor.name}
                         </div>
                         <img
-                          src={`http://38.253.65.250:8080/chart.png?type=graph&graphid=0&id=${sensor.id}&width=1200&height=400&username=nocittel&passhash=413758319&_=${graphTimestamp}`}
+                          src={`/api/chart-proxy?id=${sensor.id}&_=${graphTimestamp}`}
                           alt={`Gráfico ${sensor.name}`}
                           className="w-full h-auto"
                           loading="lazy"

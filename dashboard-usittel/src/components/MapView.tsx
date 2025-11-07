@@ -1,8 +1,8 @@
 /**
  * 🗺️ Vista de Mapa de Red - PRTG Original
  * 
- * Carga directamente el mapa interactivo de PRTG en un iframe
- * URL: http://38.253.65.250:8080/public/mapshow.htm?id=2197&mapid=7418EC41-A903-47CF-87A2-70E6CC8AAFF5
+ * Carga directamente el mapa interactivo de PRTG en un iframe a través de proxy
+ * Para evitar problemas de Mixed Content (HTTPS -> HTTP)
  */
 
 'use client';
@@ -12,7 +12,8 @@ interface MapViewProps {
 }
 
 export default function MapView({ sensors }: MapViewProps) {
-  const PRTG_MAP_URL = 'http://38.253.65.250:8080/public/mapshow.htm?id=2197&mapid=7418EC41-A903-47CF-87A2-70E6CC8AAFF5';
+  // Usar proxy interno para evitar Mixed Content
+  const PRTG_MAP_URL = '/api/map-proxy';
 
   return (
     <div className="w-full h-full px-4">
