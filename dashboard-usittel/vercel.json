@@ -5,12 +5,6 @@
   "installCommand": "npm install",
   "framework": "nextjs",
   "outputDirectory": ".next",
-  "crons": [
-    {
-      "path": "/api/status",
-      "schedule": "*/2 * * * *"
-    }
-  ],
   "headers": [
     {
       "source": "/api/(.*)",
