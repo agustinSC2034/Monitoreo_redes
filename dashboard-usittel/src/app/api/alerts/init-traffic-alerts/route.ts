@@ -11,7 +11,7 @@ import { createAlertRule, getAlertRules } from '@/lib/db';
 
 export async function POST(request: NextRequest) {
   try {
-    const existingRules = getAlertRules(false);
+    const existingRules = await getAlertRules(false);
     const createdRules = [];
     
     // Sensores críticos para monitorear cambios de tráfico
@@ -36,10 +36,10 @@ export async function POST(request: NextRequest) {
           recipients,
           cooldown: 300, // 5 minutos
           priority: 'medium' as const,
-          active: true
+          enabled: true
         };
         
-        createAlertRule(spikeRule);
+        await createAlertRule(spikeRule);
         createdRules.push(spikeRule);
         console.log(`✅ Regla creada: ${spikeRuleName}`);
       }
@@ -56,10 +56,10 @@ export async function POST(request: NextRequest) {
           recipients,
           cooldown: 300, // 5 minutos
           priority: 'high' as const,
-          active: true
+          enabled: true
         };
         
-        createAlertRule(dropRule);
+        await createAlertRule(dropRule);
         createdRules.push(dropRule);
         console.log(`✅ Regla creada: ${dropRuleName}`);
       }
