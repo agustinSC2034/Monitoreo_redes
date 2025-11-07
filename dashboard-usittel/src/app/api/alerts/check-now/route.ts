@@ -7,8 +7,8 @@
  */
 
 import { NextResponse } from 'next/server';
-import prtgClient from '@/lib/prtgClient';
 import { processSensorData } from '@/lib/alertMonitor';
+import prtgClient from '@/lib/prtgClient';
 
 export async function GET() {
   try {
