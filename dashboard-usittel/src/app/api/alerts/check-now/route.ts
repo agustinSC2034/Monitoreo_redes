@@ -7,13 +7,11 @@
  */
 
 import { NextResponse } from 'next/server';
-import { PRTGClient } from '@/lib/prtgClient';
-import { monitorSensor } from '@/lib/alertMonitor';
+import prtgClient from '@/lib/prtgClient';
+import { processSensorData } from '@/lib/alertMonitor';
 
 export async function GET() {
   try {
-    const prtg = new PRTGClient();
-    
     // Sensores a monitorear
     const sensorIds = ['13682', '13684', '13683', '2137', '13673'];
     const results = [];
@@ -22,10 +20,10 @@ export async function GET() {
     
     for (const sensorId of sensorIds) {
       try {
-        const sensor = await prtg.getSensorDetails(sensorId);
+        const sensor = await prtgClient.getSensor(parseInt(sensorId));
         
-        // Monitorear el sensor (esto dispara alertas si es necesario)
-        await monitorSensor(sensor);
+        // Procesar el sensor (esto dispara alertas si es necesario)
+        await processSensorData(sensor);
         
         results.push({
           sensor_id: sensorId,
