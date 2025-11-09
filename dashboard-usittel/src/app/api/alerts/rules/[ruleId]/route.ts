@@ -14,10 +14,11 @@ export const dynamic = 'force-dynamic';
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { ruleId: string } }
+  context: { params: Promise<{ ruleId: string }> }
 ) {
   try {
-    const ruleId = parseInt(params.ruleId);
+    const { ruleId: ruleIdStr } = await context.params;
+    const ruleId = parseInt(ruleIdStr);
     
     if (isNaN(ruleId)) {
       return NextResponse.json({
