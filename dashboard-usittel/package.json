@@ -14,6 +14,7 @@
     "@types/nodemailer": "^7.0.3",
     "better-sqlite3": "^12.4.1",
     "lucide-react": "^0.552.0",
+    "module-alias": "^2.2.3",
     "next": "16.0.0",
     "nodemailer": "^7.0.10",
     "react": "19.2.0",

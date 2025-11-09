@@ -1,0 +1,74 @@
+# 🤖 Monitoreo Automático PRTG - GitHub Actions
+#
+# Este workflow corre cada 5 minutos para:
+# 1. Consultar sensores PRTG
+# 2. Detectar problemas (DOWN, WARNING, caídas bruscas)
+# 3. Enviar alertas por Email y WhatsApp
+# 4. Guardar en Supabase
+#
+# Corre 24/7 sin necesidad de que nadie tenga la página abierta
+
+name: Monitoreo PRTG Automático
+
+on:
+  # Ejecutar cada 5 minutos
+  schedule:
+    - cron: '*/5 * * * *'
+  
+  # También permitir ejecución manual desde GitHub
+  workflow_dispatch:
+
+jobs:
+  check-alerts:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout código
+        uses: actions/checkout@v4
+      
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: dashboard-usittel/package-lock.json
+      
+      - name: 📦 Instalar dependencias
+        working-directory: dashboard-usittel
+        run: npm ci
+      
+      - name: 🔍 Ejecutar chequeo de alertas
+        working-directory: dashboard-usittel
+        env:
+          # PRTG
+          PRTG_BASE_URL: ${{ secrets.PRTG_BASE_URL }}
+          PRTG_USERNAME: ${{ secrets.PRTG_USERNAME }}
+          PRTG_PASSHASH: ${{ secrets.PRTG_PASSHASH }}
+          
+          # Supabase
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          
+          # Email
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_SECURE: ${{ secrets.SMTP_SECURE }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          SMTP_FROM: ${{ secrets.SMTP_FROM }}
+          ALERT_EMAIL_RECIPIENTS: ${{ secrets.ALERT_EMAIL_RECIPIENTS }}
+          
+          # WhatsApp (Twilio)
+          TWILIO_ACCOUNT_SID: ${{ secrets.TWILIO_ACCOUNT_SID }}
+          TWILIO_AUTH_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}
+          TWILIO_WHATSAPP_FROM: ${{ secrets.TWILIO_WHATSAPP_FROM }}
+          ALERT_WHATSAPP_RECIPIENTS: ${{ secrets.ALERT_WHATSAPP_RECIPIENTS }}
+        run: node scripts/check-alerts-cron.js
+      
+      - name: ✅ Chequeo completado
+        if: success()
+        run: echo "✅ Monitoreo ejecutado exitosamente a las $(date)"
+      
+      - name: ❌ Error en chequeo
+        if: failure()
+        run: echo "❌ Error en el monitoreo - revisar logs"
