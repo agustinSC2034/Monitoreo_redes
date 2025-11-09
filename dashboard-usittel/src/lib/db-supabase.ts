@@ -461,4 +461,57 @@ export async function getDowntimeEvents(sensorId: string, days: number = 7) {
   return data as StatusChange[];
 }
 
+/**
+ * 📋 Obtener UNA regla de alerta por ID
+ */
+export async function getAlertRule(ruleId: number): Promise<AlertRule | null> {
+  const db = getDB();
+  
+  const { data, error } = await db
+    .from('alert_rules')
+    .select('*')
+    .eq('id', ruleId)
+    .single();
+  
+  if (error) {
+    if (error.code === 'PGRST116') {
+      // No encontrado
+      return null;
+    }
+    console.error('❌ Error obteniendo regla:', error);
+    throw error;
+  }
+  
+  if (!data) return null;
+  
+  return {
+    ...data,
+    channels: JSON.parse(data.channels),
+    recipients: JSON.parse(data.recipients)
+  } as AlertRule;
+}
+
+/**
+ * 🔄 Actualizar destinatarios de una regla
+ */
+export async function updateAlertRuleRecipients(
+  ruleId: number,
+  recipients: string[]
+): Promise<boolean> {
+  const db = getDB();
+  
+  const { error } = await db
+    .from('alert_rules')
+    .update({ recipients: JSON.stringify(recipients) })
+    .eq('id', ruleId);
+  
+  if (error) {
+    console.error('❌ Error actualizando destinatarios:', error);
+    return false;
+  }
+  
+  console.log(`✅ Regla ${ruleId} actualizada: ${recipients.length} destinatarios`);
+  return true;
+}
+
 export default getDB;
