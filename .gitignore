@@ -1,0 +1,15 @@
+# Documentación privada con información sensible
+docs/
+*.local.md
+SECRETS*.md
+
+# Base de datos
+*.db
+*.db-shm
+*.db-wal
+
+# Variables de entorno
+.env*
+
+# Archivos de configuración local
+*.local.*

@@ -14,7 +14,8 @@ interface Alert {
   sensor_name: string;
   status: string;
   message?: string;
-  triggered_at: string;
+  timestamp?: number; // Unix timestamp en segundos
+  triggered_at?: string; // ISO string (fallback)
   success: boolean;
 }
 
@@ -63,7 +64,9 @@ export default function NotificationBell() {
         setAlerts(data.data);
         
         const newAlerts = data.data.filter((alert: Alert) => {
-          const alertTime = new Date(alert.triggered_at).getTime();
+          const alertTime = alert.timestamp 
+            ? alert.timestamp * 1000  // Unix timestamp en segundos → ms
+            : new Date(alert.triggered_at || 0).getTime();
           return alertTime > lastCheckTime;
         });
         
@@ -94,8 +97,23 @@ export default function NotificationBell() {
     return 'text-green-500';
   };
 
-  const formatTime = (dateString: string) => {
-    const date = new Date(dateString);
+  const formatTime = (timestampOrDate: string | number) => {
+    // Puede venir como timestamp Unix (segundos) o como string ISO
+    let date: Date;
+    
+    if (typeof timestampOrDate === 'number') {
+      // Unix timestamp en segundos
+      date = new Date(timestampOrDate * 1000);
+    } else {
+      // String ISO
+      date = new Date(timestampOrDate);
+    }
+    
+    // Validar que la fecha es válida
+    if (isNaN(date.getTime())) {
+      return 'N/A';
+    }
+    
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
     const diffMins = Math.floor(diffMs / 60000);
@@ -200,7 +218,7 @@ export default function NotificationBell() {
                           <span className={`text-xs whitespace-nowrap ${
                             theme === 'light' ? 'text-gray-500' : 'text-gray-400'
                           }`}>
-                            {formatTime(alert.triggered_at)}
+                            {formatTime(alert.timestamp || alert.triggered_at || 0)}
                           </span>
                         </div>
                         

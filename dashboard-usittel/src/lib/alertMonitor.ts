@@ -519,17 +519,16 @@ async function triggerAlert(rule: AlertRule, sensor: SensorHistory, change: Stat
  */
 function formatAlertMessage(rule: AlertRule, sensor: SensorHistory, change: StatusChange): string {
   // sensor.timestamp es Unix timestamp en UTC (segundos)
-  // Convertir a milisegundos y restar 3 horas para Argentina (UTC-3)
-  const adjustedTimestamp = (sensor.timestamp * 1000) - (3 * 60 * 60 * 1000);
-  const timestamp = new Date(adjustedTimestamp).toLocaleString('es-AR', {
+  // Convertir directamente usando la timezone de Argentina
+  const timestamp = new Date(sensor.timestamp * 1000).toLocaleString('es-AR', {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
     hour: '2-digit',
     minute: '2-digit',
     second: '2-digit',
-    hour12: true, // Formato 12 horas con AM/PM
-    timeZone: 'UTC' // Importante: ya ajustamos manualmente, usar UTC para no re-ajustar
+    hour12: false, // Formato 24 horas para evitar confusión AM/PM
+    timeZone: 'America/Argentina/Buenos_Aires'
   });
   
   let message = `SENSOR: ${sensor.sensor_name}\n`;

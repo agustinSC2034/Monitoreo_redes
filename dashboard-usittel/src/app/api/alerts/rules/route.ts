@@ -21,7 +21,11 @@ import {
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const activeOnly = searchParams.get('active') !== 'false';
+    // Si all=true, traer todas (activas e inactivas)
+    // Si active=false, traer todas
+    // Por defecto, traer solo activas
+    const all = searchParams.get('all') === 'true';
+    const activeOnly = all ? false : searchParams.get('active') !== 'false';
     
     const rules = await getAlertRules(activeOnly);
     
