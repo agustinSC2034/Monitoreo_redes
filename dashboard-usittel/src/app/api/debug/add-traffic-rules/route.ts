@@ -14,38 +14,28 @@ export async function GET() {
     const db = getDB();
     
     const newRules = [
+      // TECO - Alertas de cambios bruscos (DESACTIVADAS)
       {
-        name: 'CABASE - Caída brusca >50%',
-        sensor_id: '13682',
-        condition: 'traffic_drop',
-        threshold: 50,
-        priority: 'high',
-        channels: JSON.stringify(['email', 'whatsapp']),
-        recipients: JSON.stringify(['agustin.scutari@it-tel.com.ar', '+5491124682247']),
-        cooldown: 300,
-        enabled: true
-      },
-      {
-        name: 'IPLANxARSAT - Aumento brusco >50%',
-        sensor_id: '13684',
+        name: 'TECO - Aumento brusco >50% [INACTIVA]',
+        sensor_id: '13683',
         condition: 'traffic_spike',
         threshold: 50,
         priority: 'medium',
         channels: JSON.stringify(['email', 'whatsapp']),
         recipients: JSON.stringify(['agustin.scutari@it-tel.com.ar', '+5491124682247']),
         cooldown: 300,
-        enabled: true
+        enabled: false  // ⚠️ DESACTIVADA - Activar cuando sea necesario
       },
       {
-        name: 'IPLANxARSAT - Caída brusca >50%',
-        sensor_id: '13684',
+        name: 'TECO - Caída brusca >50% [INACTIVA]',
+        sensor_id: '13683',
         condition: 'traffic_drop',
         threshold: 50,
         priority: 'medium',
         channels: JSON.stringify(['email', 'whatsapp']),
         recipients: JSON.stringify(['agustin.scutari@it-tel.com.ar', '+5491124682247']),
         cooldown: 300,
-        enabled: true
+        enabled: false  // ⚠️ DESACTIVADA - Activar cuando sea necesario
       }
     ];
     
