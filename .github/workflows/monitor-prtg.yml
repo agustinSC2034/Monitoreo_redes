@@ -30,39 +30,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: dashboard-usittel/package-lock.json
       
-      - name: 📦 Instalar dependencias
+      - name:  Ejecutar chequeo de alertas
         working-directory: dashboard-usittel
-        run: npm ci
-      
-      - name: 🔍 Ejecutar chequeo de alertas
-        working-directory: dashboard-usittel
-        env:
-          # PRTG
-          PRTG_BASE_URL: ${{ secrets.PRTG_BASE_URL }}
-          PRTG_USERNAME: ${{ secrets.PRTG_USERNAME }}
-          PRTG_PASSHASH: ${{ secrets.PRTG_PASSHASH }}
-          
-          # Supabase
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
-          
-          # Email
-          SMTP_HOST: ${{ secrets.SMTP_HOST }}
-          SMTP_PORT: ${{ secrets.SMTP_PORT }}
-          SMTP_SECURE: ${{ secrets.SMTP_SECURE }}
-          SMTP_USER: ${{ secrets.SMTP_USER }}
-          SMTP_PASS: ${{ secrets.SMTP_PASS }}
-          SMTP_FROM: ${{ secrets.SMTP_FROM }}
-          ALERT_EMAIL_RECIPIENTS: ${{ secrets.ALERT_EMAIL_RECIPIENTS }}
-          
-          # WhatsApp (Twilio)
-          TWILIO_ACCOUNT_SID: ${{ secrets.TWILIO_ACCOUNT_SID }}
-          TWILIO_AUTH_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}
-          TWILIO_WHATSAPP_FROM: ${{ secrets.TWILIO_WHATSAPP_FROM }}
-          ALERT_WHATSAPP_RECIPIENTS: ${{ secrets.ALERT_WHATSAPP_RECIPIENTS }}
         run: node scripts/check-alerts-cron.js
       
       - name: ✅ Chequeo completado
