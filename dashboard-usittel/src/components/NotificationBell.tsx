@@ -86,14 +86,16 @@ export default function NotificationBell() {
   };
 
   const getStatusIndicator = (status: string) => {
-    if (status.toLowerCase().includes('down')) return '●';
-    if (status.toLowerCase().includes('warning')) return '▲';
+    const lowerStatus = status.toLowerCase();
+    if (lowerStatus.includes('down') || lowerStatus.includes('falla') || lowerStatus.includes('error')) return '●';
+    if (lowerStatus.includes('warning') || lowerStatus.includes('advertencia')) return '▲';
     return '✓';
   };
 
   const getStatusColor = (status: string) => {
-    if (status.toLowerCase().includes('down')) return 'text-red-500';
-    if (status.toLowerCase().includes('warning')) return 'text-yellow-500';
+    const lowerStatus = status.toLowerCase();
+    if (lowerStatus.includes('down') || lowerStatus.includes('falla') || lowerStatus.includes('error')) return 'text-red-500';
+    if (lowerStatus.includes('warning') || lowerStatus.includes('advertencia')) return 'text-yellow-500';
     return 'text-green-500';
   };
 
