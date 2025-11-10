@@ -373,20 +373,22 @@ class PRTGClient {
    * NOTA: IPLAN es nuestro proveedor de tránsito IP principal
    */
   async getCriticalSensors() {
-    // Orden de prioridad: CABASE, IPLAN ARSAT, IPLAN TECO, RDA, DTV
-    const sensorIds = [13682, 13684, 13683, 2137, 13673];
+    // IDs según ubicación
+    const sensorIds = this.location === 'matanza'
+      ? [5187, 4736, 4737, 5159, 3942, 6689, 4665, 4642] // LARANET
+      : [13682, 13684, 13683, 2137, 13673]; // Tandil (USITTEL)
     
-    console.log('🚨 Consultando sensores críticos...');
+    console.log(`🚨 Consultando sensores críticos de ${this.location.toUpperCase()}...`);
     
     try {
       // Consultar todos los sensores en paralelo (más rápido)
       const promises = sensorIds.map(id => this.getSensor(id));
       const results = await Promise.all(promises);
       
-      console.log('✅ Sensores críticos obtenidos');
+      console.log(`✅ Sensores críticos obtenidos de ${this.location.toUpperCase()}`);
       return results;
     } catch (error) {
-      console.error('❌ Error al obtener sensores críticos:', error);
+      console.error(`❌ Error al obtener sensores críticos de ${this.location.toUpperCase()}:`, error);
       throw error;
     }
   }
