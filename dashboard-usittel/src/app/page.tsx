@@ -437,20 +437,6 @@ export default function Home() {
           </>
         )}
 
-        {!loading && !error && location === 'matanza' && (
-          <div className={`rounded-lg border text-center py-16 ${
-            theme === 'light'
-              ? 'bg-white border-gray-200'
-              : 'bg-gray-800 border-gray-700'
-          }`}>
-            <div className={`text-sm ${
-              theme === 'light' ? 'text-gray-600' : 'text-gray-400'
-            }`}>
-              Sistema LARANET La Matanza en configuración
-            </div>
-          </div>
-        )}
-
       </main>
 
       {/* Footer minimalista */}
