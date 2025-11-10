@@ -14,6 +14,7 @@ import {
   saveAlertHistory,
   saveSystemLog,
   getAlertRuleBySensor,
+  getLastAlertForRule,
   type SensorHistory,
   type StatusChange,
   type AlertRule
@@ -221,9 +222,12 @@ async function detectStatusChange(current: SensorHistory) {
       trafficValue: currentTraffic || undefined
     });
     
-    // 🆕 Si el sensor volvió a estado normal (UP), limpiar los estados alertados
-    // para que pueda alertar nuevamente si vuelve a fallar
-    if (current.status_raw === 3) { // 3 = UP
+    // 🆕 Si el sensor volvió a estado normal (UP), disparar alerta de recuperación
+    if (current.status_raw === 3 && lastKnown.status_raw !== 3) { // Recuperación: X → UP
+      console.log(`✅ Sensor recuperado: ${current.sensor_name}`);
+      await checkRecoveryAlerts(current, change);
+      
+      // Limpiar los estados alertados para que pueda alertar nuevamente si vuelve a fallar
       const rules = await getAlertRuleBySensor(sensorId);
       for (const rule of rules) {
         const stateKey = `${rule.id}_${sensorId}`;
@@ -340,13 +344,26 @@ async function checkThresholdAlerts(sensor: SensorHistory) {
     // Nota: traffic_spike y traffic_drop se manejan en detectTrafficChange
     if (!['slow', 'down', 'warning'].includes(rule.condition)) continue;
     
-    // 🆕 Verificar si el estado cambió desde la última alerta
+    // Skip si la regla no tiene ID (no debería pasar)
+    if (!rule.id) continue;
+    
+    // 🆕 Verificar si el estado cambió desde la última alerta (consultar BD)
     const stateKey = `${rule.id}_${sensor.sensor_id}`;
     const lastAlertedStatus = lastAlertedStates.get(stateKey);
     
-    // Si el estado es el mismo que cuando se alertó por última vez, NO alertar de nuevo
+    // Si ya lo tenemos en memoria y es el mismo estado, skip
     if (lastAlertedStatus === sensor.status) {
       continue;
+    }
+    
+    // 🆕 Si no está en memoria, consultar la BD
+    if (!lastAlertedStatus) {
+      const lastAlert = await getLastAlertForRule(rule.id, sensor.sensor_id);
+      if (lastAlert && lastAlert.status === sensor.status) {
+        // Guardar en memoria para próximas verificaciones
+        lastAlertedStates.set(stateKey, sensor.status);
+        continue;
+      }
     }
     
     // Verificar cooldown
@@ -372,6 +389,44 @@ async function checkThresholdAlerts(sensor: SensorHistory) {
 }
 
 /**
+ * ✅ Verificar y disparar alertas de recuperación
+ */
+async function checkRecoveryAlerts(sensor: SensorHistory, change: StatusChange) {
+  // Obtener reglas de alerta para este sensor
+  const rules = await getAlertRuleBySensor(sensor.sensor_id);
+  
+  if (!rules || rules.length === 0) {
+    return;
+  }
+  
+  for (const rule of rules) {
+    // Solo disparar para reglas de tipo "down" que ahora se recuperaron
+    if (rule.condition !== 'down') continue;
+    
+    // Verificar cooldown
+    const cooldownKey = `${rule.id}_${sensor.sensor_id}`;
+    const lastAlertTime = lastAlertTimes.get(cooldownKey);
+    const now = Math.floor(Date.now() / 1000);
+    
+    if (lastAlertTime && (now - lastAlertTime) < rule.cooldown) {
+      continue;
+    }
+    
+    console.log(`✅ Disparando alerta de recuperación: ${rule.name}`);
+    
+    // Modificar el change para indicar recuperación
+    const recoveryChange: StatusChange = {
+      ...change,
+      old_status: change.old_status + ' ❌',
+      new_status: change.new_status + ' ✅'
+    };
+    
+    await triggerAlert(rule, sensor, recoveryChange);
+    lastAlertTimes.set(cooldownKey, now);
+  }
+}
+
+/**
  * 🚨 Verificar y disparar alertas
  */
 async function checkAndTriggerAlerts(sensor: SensorHistory, change: StatusChange) {
@@ -383,14 +438,27 @@ async function checkAndTriggerAlerts(sensor: SensorHistory, change: StatusChange
   }
   
   for (const rule of rules) {
+    // Skip si la regla no tiene ID
+    if (!rule.id) continue;
+    
     // 🆕 Verificar si el estado cambió desde la última alerta (para reglas down/warning)
     if (['down', 'warning'].includes(rule.condition)) {
       const stateKey = `${rule.id}_${sensor.sensor_id}`;
       const lastAlertedStatus = lastAlertedStates.get(stateKey);
       
-      // Si el estado es el mismo que cuando se alertó por última vez, NO alertar de nuevo
+      // Si ya lo tenemos en memoria y es el mismo estado, skip
       if (lastAlertedStatus === sensor.status) {
         continue;
+      }
+      
+      // 🆕 Si no está en memoria, consultar la BD
+      if (!lastAlertedStatus) {
+        const lastAlert = await getLastAlertForRule(rule.id, sensor.sensor_id);
+        if (lastAlert && lastAlert.status === sensor.status) {
+          // Guardar en memoria para próximas verificaciones
+          lastAlertedStates.set(stateKey, sensor.status);
+          continue;
+        }
       }
     }
     

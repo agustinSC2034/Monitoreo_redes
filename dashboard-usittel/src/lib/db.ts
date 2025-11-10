@@ -274,6 +274,28 @@ export async function getAlertHistory(limit: number = 100): Promise<AlertHistory
   return data || [];
 }
 
+/**
+ * 🔍 Obtener la última alerta enviada para una regla y sensor específicos
+ */
+export async function getLastAlertForRule(ruleId: number, sensorId: string): Promise<AlertHistory | null> {
+  const db = getDB();
+  const { data, error } = await db
+    .from('alert_history')
+    .select('*')
+    .eq('rule_id', ruleId)
+    .eq('sensor_id', sensorId)
+    .eq('success', true)
+    .order('timestamp', { ascending: false })
+    .limit(1);
+  
+  if (error) {
+    console.error('❌ Error obteniendo última alerta:', error);
+    return null;
+  }
+  
+  return data && data.length > 0 ? data[0] : null;
+}
+
 // ========== STATUS CHANGES ==========
 
 export async function saveStatusChange(change: StatusChange) {
