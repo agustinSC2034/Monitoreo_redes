@@ -323,8 +323,9 @@ async function checkThresholdAlerts(sensor: SensorHistory) {
   };
   
   for (const rule of rules) {
-    // Solo evaluar reglas de tipo 'slow' (umbral)
-    if (rule.condition !== 'slow') continue;
+    // Evaluar reglas de tipo 'slow', 'down', 'warning'
+    // Nota: traffic_spike y traffic_drop se manejan en detectTrafficChange
+    if (!['slow', 'down', 'warning'].includes(rule.condition)) continue;
     
     // Verificar cooldown
     const cooldownKey = `${rule.id}_${sensor.sensor_id}`;
@@ -335,11 +336,11 @@ async function checkThresholdAlerts(sensor: SensorHistory) {
       continue;
     }
     
-    // Verificar condición de umbral
+    // Verificar condición
     const shouldTrigger = evaluateAlertCondition(rule, sensor, dummyChange);
     
     if (shouldTrigger) {
-      console.log(`🚨 Umbral superado: ${rule.name}`);
+      console.log(`🚨 Condición detectada: ${rule.name}`);
       await triggerAlert(rule, sensor, dummyChange);
       lastAlertTimes.set(cooldownKey, now);
     }

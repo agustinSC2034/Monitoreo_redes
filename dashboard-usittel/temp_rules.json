@@ -1,0 +1,256 @@
+﻿{
+    "success":  true,
+    "data":  [
+                 {
+                     "id":  7,
+                     "name":  "IPLAN ARSAT \u003e 1000 Mbit/s",
+                     "sensor_id":  "13684",
+                     "condition":  "slow",
+                     "threshold":  1000,
+                     "priority":  "high",
+                     "channels":  [
+                                      "email",
+                                      "whatsapp"
+                                  ],
+                     "recipients":  [
+                                        "agustin.scutari@it-tel.com.ar",
+                                        "md@it-tel.com.ar",
+                                        "ja@it-tel.com.ar",
+                                        "+5491124682247",
+                                        "+5491167995973",
+                                        "+5491150077992"
+                                    ],
+                     "cooldown":  60,
+                     "enabled":  true,
+                     "created_at":  1762726788
+                 },
+                 {
+                     "id":  6,
+                     "name":  "CABASE \u003e 8000 Mbit/s",
+                     "sensor_id":  "13682",
+                     "condition":  "slow",
+                     "threshold":  8000,
+                     "priority":  "high",
+                     "channels":  [
+                                      "email",
+                                      "whatsapp"
+                                  ],
+                     "recipients":  [
+                                        "agustin.scutari@it-tel.com.ar",
+                                        "md@it-tel.com.ar",
+                                        "ja@it-tel.com.ar",
+                                        "+5491124682247",
+                                        "+5491167995973",
+                                        "+5491150077992"
+                                    ],
+                     "cooldown":  60,
+                     "enabled":  true,
+                     "created_at":  1762723585
+                 },
+                 {
+                     "id":  12,
+                     "name":  "TECO - Aumento brusco \u003e50% [INACTIVA]",
+                     "sensor_id":  "13683",
+                     "condition":  "traffic_spike",
+                     "threshold":  50,
+                     "priority":  "medium",
+                     "channels":  "[\"email\",\"whatsapp\"]",
+                     "recipients":  "[\"agustin.scutari@it-tel.com.ar\",\"+5491124682247\"]",
+                     "cooldown":  300,
+                     "enabled":  false,
+                     "created_at":  1762727340
+                 },
+                 {
+                     "id":  13,
+                     "name":  "TECO - Ca??da brusca \u003e50% [INACTIVA]",
+                     "sensor_id":  "13683",
+                     "condition":  "traffic_drop",
+                     "threshold":  50,
+                     "priority":  "medium",
+                     "channels":  "[\"email\",\"whatsapp\"]",
+                     "recipients":  "[\"agustin.scutari@it-tel.com.ar\",\"+5491124682247\"]",
+                     "cooldown":  300,
+                     "enabled":  false,
+                     "created_at":  1762727340
+                 },
+                 {
+                     "id":  1,
+                     "name":  "CABASE - Enlace Ca??do",
+                     "sensor_id":  "13682",
+                     "condition":  "down",
+                     "threshold":  null,
+                     "priority":  "critical",
+                     "channels":  [
+                                      "email"
+                                  ],
+                     "recipients":  [
+                                        "agustin.scutari@it-tel.com.ar",
+                                        "md@it-tel.com.ar",
+                                        "ja@it-tel.com.ar"
+                                    ],
+                     "cooldown":  300,
+                     "enabled":  true,
+                     "created_at":  1762529965
+                 },
+                 {
+                     "id":  2,
+                     "name":  "IPLANxARSAT - Enlace Ca??do",
+                     "sensor_id":  "13684",
+                     "condition":  "down",
+                     "threshold":  null,
+                     "priority":  "critical",
+                     "channels":  [
+                                      "email"
+                                  ],
+                     "recipients":  [
+                                        "agustin.scutari@it-tel.com.ar",
+                                        "md@it-tel.com.ar",
+                                        "ja@it-tel.com.ar"
+                                    ],
+                     "cooldown":  300,
+                     "enabled":  true,
+                     "created_at":  1762529965
+                 },
+                 {
+                     "id":  3,
+                     "name":  "TECO - Enlace Ca??do",
+                     "sensor_id":  "13683",
+                     "condition":  "down",
+                     "threshold":  null,
+                     "priority":  "critical",
+                     "channels":  [
+                                      "email"
+                                  ],
+                     "recipients":  [
+                                        "agustin.scutari@it-tel.com.ar",
+                                        "md@it-tel.com.ar",
+                                        "ja@it-tel.com.ar"
+                                    ],
+                     "cooldown":  300,
+                     "enabled":  true,
+                     "created_at":  1762529965
+                 },
+                 {
+                     "id":  4,
+                     "name":  "RDA - Enlace Ca??do",
+                     "sensor_id":  "2137",
+                     "condition":  "down",
+                     "threshold":  null,
+                     "priority":  "high",
+                     "channels":  [
+                                      "email"
+                                  ],
+                     "recipients":  [
+                                        "agustin.scutari@it-tel.com.ar",
+                                        "md@it-tel.com.ar",
+                                        "ja@it-tel.com.ar"
+                                    ],
+                     "cooldown":  300,
+                     "enabled":  true,
+                     "created_at":  1762529965
+                 },
+                 {
+                     "id":  5,
+                     "name":  "DTV - Enlace Ca??do",
+                     "sensor_id":  "13673",
+                     "condition":  "down",
+                     "threshold":  null,
+                     "priority":  "high",
+                     "channels":  [
+                                      "email"
+                                  ],
+                     "recipients":  [
+                                        "agustin.scutari@it-tel.com.ar",
+                                        "md@it-tel.com.ar",
+                                        "ja@it-tel.com.ar"
+                                    ],
+                     "cooldown":  300,
+                     "enabled":  true,
+                     "created_at":  1762529965
+                 },
+                 {
+                     "id":  8,
+                     "name":  "CABASE - Aumento brusco \u003e50%",
+                     "sensor_id":  "13682",
+                     "condition":  "traffic_spike",
+                     "threshold":  50,
+                     "priority":  "high",
+                     "channels":  [
+                                      "email",
+                                      "whatsapp"
+                                  ],
+                     "recipients":  [
+                                        "agustin.scutari@it-tel.com.ar",
+                                        "md@it-tel.com.ar",
+                                        "ja@it-tel.com.ar",
+                                        "+5491124682247",
+                                        "+5491167995973",
+                                        "+5491150077992"
+                                    ],
+                     "cooldown":  300,
+                     "enabled":  true,
+                     "created_at":  1762726833
+                 },
+                 {
+                     "id":  9,
+                     "name":  "CABASE - Ca??da brusca \u003e50%",
+                     "sensor_id":  "13682",
+                     "condition":  "traffic_drop",
+                     "threshold":  50,
+                     "priority":  "high",
+                     "channels":  "[\"email\",\"whatsapp\"]",
+                     "recipients":  [
+                                        "agustin.scutari@it-tel.com.ar",
+                                        "md@it-tel.com.ar",
+                                        "ja@it-tel.com.ar",
+                                        "+5491124682247",
+                                        "+5491167995973",
+                                        "+5491150077992"
+                                    ],
+                     "cooldown":  300,
+                     "enabled":  true,
+                     "created_at":  1762726994
+                 },
+                 {
+                     "id":  10,
+                     "name":  "IPLANxARSAT - Aumento brusco \u003e50%",
+                     "sensor_id":  "13684",
+                     "condition":  "traffic_spike",
+                     "threshold":  50,
+                     "priority":  "medium",
+                     "channels":  "[\"email\",\"whatsapp\"]",
+                     "recipients":  [
+                                        "agustin.scutari@it-tel.com.ar",
+                                        "md@it-tel.com.ar",
+                                        "ja@it-tel.com.ar",
+                                        "+5491124682247",
+                                        "+5491167995973",
+                                        "+5491150077992"
+                                    ],
+                     "cooldown":  300,
+                     "enabled":  true,
+                     "created_at":  1762726994
+                 },
+                 {
+                     "id":  11,
+                     "name":  "IPLANxARSAT - Ca??da brusca \u003e50%",
+                     "sensor_id":  "13684",
+                     "condition":  "traffic_drop",
+                     "threshold":  50,
+                     "priority":  "medium",
+                     "channels":  "[\"email\",\"whatsapp\"]",
+                     "recipients":  [
+                                        "agustin.scutari@it-tel.com.ar",
+                                        "md@it-tel.com.ar",
+                                        "ja@it-tel.com.ar",
+                                        "+5491124682247",
+                                        "+5491167995973",
+                                        "+5491150077992"
+                                    ],
+                     "cooldown":  300,
+                     "enabled":  true,
+                     "created_at":  1762726994
+                 }
+             ],
+    "count":  13
+}
