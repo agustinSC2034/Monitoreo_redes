@@ -2,25 +2,29 @@
  * 🤖 Cron Job Handler - Endpoint público para servicios externos
  * 
  * Este endpoint está diseñado para ser llamado por servicios de cron externos
- * como cron-job.org, UptimeRobot, etc.
+ * como cron-job.org, UptimeRobot, GitHub Actions, etc.
  * 
- * Endpoint: GET /api/cron/check-alerts
+ * Endpoint: GET /api/cron/check-alerts?location=tandil|matanza
  * 
  * Ejecuta el monitoreo de todos los sensores y dispara alertas si es necesario
  */
 
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { processSensorData } from '@/lib/alertMonitor';
-import prtgClient from '@/lib/prtgClient';
+import { getPRTGClient, type PRTGLocation } from '@/lib/prtgClient';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60; // 60 segundos máximo
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
+    // Obtener parámetro location de la URL (por defecto 'tandil' para compatibilidad)
+    const searchParams = request.nextUrl.searchParams;
+    const location = (searchParams.get('location') || 'tandil') as PRTGLocation;
+    
     // Log de inicio
     const startTime = Date.now();
-    console.log('🤖 [CRON] Iniciando chequeo automático de alertas...');
+    console.log(`🤖 [CRON] Iniciando chequeo automático de alertas para ${location.toUpperCase()}...`);
     
     // Verificar token de seguridad (opcional pero recomendado)
     const authHeader = request.headers.get('authorization');
@@ -32,8 +36,14 @@ export async function GET(request: Request) {
       // return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
-    // Sensores a monitorear
-    const sensorIds = ['13682', '13684', '13683', '2137', '13673'];
+    // Obtener el cliente PRTG correcto según la ubicación
+    const prtgClient = getPRTGClient(location);
+    
+    // Sensores a monitorear según ubicación
+    const sensorIds = location === 'matanza' 
+      ? ['5187', '4736', '4737', '5159', '3942', '6689', '4665', '4642'] // IDs de LARANET
+      : ['13682', '13684', '13683', '2137', '13673']; // IDs de Tandil
+    
     const results = [];
     
     for (const sensorId of sensorIds) {
@@ -65,11 +75,12 @@ export async function GET(request: Request) {
     }
     
     const duration = Date.now() - startTime;
-    console.log(`✅ [CRON] Chequeo completado en ${duration}ms`);
+    console.log(`✅ [CRON] Chequeo completado para ${location.toUpperCase()} en ${duration}ms`);
     
     return NextResponse.json({
       success: true,
-      message: 'Chequeo de alertas completado',
+      location: location,
+      message: `Chequeo de alertas completado para ${location.toUpperCase()}`,
       timestamp: new Date().toISOString(),
       duration_ms: duration,
       results,

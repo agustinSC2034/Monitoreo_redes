@@ -6,14 +6,22 @@
  * - La autenticación (usuario/password)
  * - La construcción de URLs
  * - El manejo de errores
+ * - Soporte para múltiples servidores (Tandil/USITTEL y La Matanza/LARANET)
  * 
  * Uso: import prtgClient from '@/lib/prtgClient'
  */
 
-// 🔐 Credenciales del servidor PRTG (vienen del archivo .env.local)
-const PRTG_BASE_URL = process.env.PRTG_BASE_URL || 'http://38.253.65.250:8080';
-const PRTG_USERNAME = process.env.PRTG_USERNAME || 'nocittel';
-const PRTG_PASSHASH = process.env.PRTG_PASSHASH || '';
+// 🔐 Credenciales TANDIL (USITTEL)
+const PRTG_TANDIL_BASE_URL = process.env.PRTG_BASE_URL || 'http://38.253.65.250:8080';
+const PRTG_TANDIL_USERNAME = process.env.PRTG_USERNAME || 'nocittel';
+const PRTG_TANDIL_PASSHASH = process.env.PRTG_PASSHASH || '';
+
+// 🔐 Credenciales LA MATANZA (LARANET)
+const PRTG_LARANET_BASE_URL = process.env.PRTG_LARANET_BASE_URL || 'http://stats.reditel.com.ar:8995';
+const PRTG_LARANET_USERNAME = process.env.PRTG_LARANET_USERNAME || 'nocittel';
+const PRTG_LARANET_PASSHASH = process.env.PRTG_LARANET_PASSHASH || '';
+
+export type PRTGLocation = 'tandil' | 'matanza';
 
 /**
  * 🏗️ Clase PRTGClient
@@ -23,15 +31,26 @@ class PRTGClient {
   private baseURL: string;
   private username: string;
   private passhash: string;
+  private location: PRTGLocation;
   private cache: Map<string, { data: any; timestamp: number }>;
   private lastRequestTime: number = 0;
   private minRequestInterval: number = 1000; // 1 segundo entre requests
 
-  constructor() {
-    this.baseURL = PRTG_BASE_URL;
-    this.username = PRTG_USERNAME;
-    this.passhash = PRTG_PASSHASH;
+  constructor(location: PRTGLocation = 'tandil') {
+    this.location = location;
+    
+    if (location === 'matanza') {
+      this.baseURL = PRTG_LARANET_BASE_URL;
+      this.username = PRTG_LARANET_USERNAME;
+      this.passhash = PRTG_LARANET_PASSHASH;
+    } else {
+      this.baseURL = PRTG_TANDIL_BASE_URL;
+      this.username = PRTG_TANDIL_USERNAME;
+      this.passhash = PRTG_TANDIL_PASSHASH;
+    }
+    
     this.cache = new Map();
+    console.log(`🌍 PRTGClient inicializado para ${location.toUpperCase()} (${this.baseURL})`);
   }
 
   /**
@@ -552,7 +571,15 @@ class PRTGClient {
   }
 }
 
-// 🎯 Exportar una ÚNICA instancia del cliente (Singleton)
-// Esto significa que siempre usamos el mismo objeto en toda la aplicación
-const prtgClient = new PRTGClient();
+// 🎯 Exportar instancias para cada ubicación
+export const prtgClientTandil = new PRTGClient('tandil');
+export const prtgClientMatanza = new PRTGClient('matanza');
+
+// 🎯 Exportar función helper para obtener el cliente correcto según ubicación
+export function getPRTGClient(location: PRTGLocation): PRTGClient {
+  return location === 'matanza' ? prtgClientMatanza : prtgClientTandil;
+}
+
+// 🎯 Mantener compatibilidad con código existente (por defecto Tandil)
+const prtgClient = prtgClientTandil;
 export default prtgClient;

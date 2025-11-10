@@ -1,29 +1,38 @@
 /**
  * 🚨 API Route: Estado de Sensores Críticos
  * 
- * Ruta: /api/status
+ * Ruta: /api/status?location=tandil|matanza
  * Método: GET
  * 
  * ¿Qué hace?
- * - Obtiene el estado actual de los 4 sensores críticos (IPLAN, ARSAT, TECO, CABASE)
+ * - Obtiene el estado actual de los sensores críticos según la ubicación
+ * - TANDIL: IPLAN, ARSAT, TECO, CABASE
+ * - MATANZA: Sensores de LARANET
  * - Devuelve datos en formato JSON limpio y fácil de usar
  * 
  * ¿Cómo se usa desde el frontend?
- * fetch('/api/status')
+ * fetch('/api/status?location=tandil')
  *   .then(res => res.json())
  *   .then(data => console.log(data))
  */
 
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { processSensorData } from '@/lib/alertMonitor';
-import prtgClient from '@/lib/prtgClient';
+import { getPRTGClient, type PRTGLocation } from '@/lib/prtgClient';
 
 // Esta función se ejecuta cuando alguien hace GET a /api/status
-export async function GET() {
-  console.log('📡 [API] /api/status - Solicitud recibida');
+export async function GET(request: NextRequest) {
+  // Obtener parámetro location de la URL (por defecto 'tandil')
+  const searchParams = request.nextUrl.searchParams;
+  const location = (searchParams.get('location') || 'tandil') as PRTGLocation;
+  
+  console.log(`📡 [API] /api/status - Solicitud recibida para ${location.toUpperCase()}`);
   
   try {
-    // 1️⃣ Llamar al cliente PRTG para obtener sensores críticos
+    // 1️⃣ Obtener el cliente PRTG correcto según la ubicación
+    const prtgClient = getPRTGClient(location);
+    
+    // 2️⃣ Llamar al cliente PRTG para obtener sensores críticos
     const sensorsData = await prtgClient.getCriticalSensors();
     
     // 2️⃣ Procesar cada sensor: guardar historial y detectar cambios
@@ -40,13 +49,26 @@ export async function GET() {
     // Convertimos el formato complejo de PRTG a algo simple
     const processedData = sensorsData.map((sensor: any) => {
       // Mapeo de IDs reales a nombres amigables
-      const nameMapping: Record<string, string> = {
+      const nameMappingTandil: Record<string, string> = {
         '13682': 'CABASE',
         '13683': 'TECO (L2L x TECO)', 
         '13684': 'IPLANxARSAT (L2L x ARSAT)',
         '2137': 'ITTEL-RDA-1-TDL (vlan500-WAN)',
         '13673': 'ITTEL-RDB-1-TDL (RDB-DTV)'
       };
+      
+      const nameMappingMatanza: Record<string, string> = {
+        '5187': 'VLAN500-WAN (Lomas de Eziza)',
+        '4736': 'sfp28-11-WAN2-BACKUP',
+        '4737': 'sfp28-12-WAN1-PPAL',
+        '5159': 'sfp28-10-WANxIPLAN',
+        '3942': 'sfp-sfpplus1-WAN',
+        '6689': 'IPTV-Modulador 1',
+        '4665': 'VLAN500-WAN (LARA 2.2)',
+        '4642': 'vlan500-iBGP (LARA 2.1)'
+      };
+      
+      const nameMapping = location === 'matanza' ? nameMappingMatanza : nameMappingTandil;
       
       const sensorId = String(sensor.objid || sensor.objid_raw || 'unknown');
       

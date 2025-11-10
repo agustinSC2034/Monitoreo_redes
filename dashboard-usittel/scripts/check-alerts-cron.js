@@ -5,12 +5,14 @@
  * No depende de que alguien tenga la página abierta.
  * 
  * Estrategia:
- * GitHub Actions llama al endpoint /api/cron/check-alerts en Vercel
- * que tiene toda la lógica de monitoreo ya implementada.
+ * GitHub Actions llama a los endpoints de Vercel para AMBAS ubicaciones:
+ * - /api/cron/check-alerts?location=tandil (USITTEL)
+ * - /api/cron/check-alerts?location=matanza (LARANET)
  * 
  * Ventajas:
  * - No duplicamos código
  * - Usamos la misma lógica que ya funciona
+ * - Monitoreo completo de ambas ubicaciones
  * - Más fácil de mantener
  */
 
@@ -18,9 +20,10 @@ const https = require('https');
 
 // URL del endpoint en Vercel
 const VERCEL_URL = process.env.VERCEL_PRODUCTION_URL || 'monitoreo-redes-ji23nj2cy-agustins-projects-03ad7204.vercel.app';
-const ENDPOINT = `/api/cron/check-alerts`;
 
-async function callVercelEndpoint() {
+async function callVercelEndpoint(location) {
+  const ENDPOINT = `/api/cron/check-alerts?location=${location}`;
+  
   return new Promise((resolve, reject) => {
     const options = {
       hostname: VERCEL_URL,
@@ -68,28 +71,61 @@ async function callVercelEndpoint() {
 }
 
 async function main() {
-  console.log('🤖 [GitHub Actions] Iniciando monitoreo automático...');
+  console.log('🤖 [GitHub Actions] Iniciando monitoreo automático de AMBAS ubicaciones...');
   console.log(`📅 Fecha: ${new Date().toLocaleString('es-AR')}`);
-  console.log('---');
+  console.log('---\n');
   
+  let allSuccess = true;
+  
+  // 1️⃣ Monitorear TANDIL (USITTEL)
+  console.log('🏢 [TANDIL - USITTEL] Iniciando chequeo...');
   try {
-    const response = await callVercelEndpoint();
+    const responseTandil = await callVercelEndpoint('tandil');
     
-    console.log(`✅ Status: ${response.statusCode}`);
-    console.log('📊 Respuesta del servidor:');
-    console.log(JSON.stringify(response.data, null, 2));
+    console.log(`✅ [TANDIL] Status: ${responseTandil.statusCode}`);
+    console.log('📊 [TANDIL] Respuesta del servidor:');
+    console.log(JSON.stringify(responseTandil.data, null, 2));
     
-    if (response.data.results) {
-      const checked = response.data.results.filter(r => r.checked).length;
-      const total = response.data.results.length;
-      console.log(`\n✅ Sensores revisados: ${checked}/${total}`);
+    if (responseTandil.data.results) {
+      const checked = responseTandil.data.results.filter(r => r.checked).length;
+      const total = responseTandil.data.results.length;
+      console.log(`✅ [TANDIL] Sensores revisados: ${checked}/${total}`);
     }
     
-    console.log('\n✅ Monitoreo completado exitosamente');
-    process.exit(0);
+  } catch (error) {
+    console.error('❌ [TANDIL] Error:', error.message);
+    allSuccess = false;
+  }
+  
+  console.log('\n---\n');
+  
+  // 2️⃣ Monitorear LA MATANZA (LARANET)
+  console.log('🏢 [LA MATANZA - LARANET] Iniciando chequeo...');
+  try {
+    const responseMatanza = await callVercelEndpoint('matanza');
+    
+    console.log(`✅ [MATANZA] Status: ${responseMatanza.statusCode}`);
+    console.log('📊 [MATANZA] Respuesta del servidor:');
+    console.log(JSON.stringify(responseMatanza.data, null, 2));
+    
+    if (responseMatanza.data.results) {
+      const checked = responseMatanza.data.results.filter(r => r.checked).length;
+      const total = responseMatanza.data.results.length;
+      console.log(`✅ [MATANZA] Sensores revisados: ${checked}/${total}`);
+    }
     
   } catch (error) {
-    console.error('❌ Error al ejecutar el monitoreo:', error.message);
+    console.error('❌ [MATANZA] Error:', error.message);
+    allSuccess = false;
+  }
+  
+  console.log('\n---\n');
+  
+  if (allSuccess) {
+    console.log('✅ Monitoreo completado exitosamente para AMBAS ubicaciones');
+    process.exit(0);
+  } else {
+    console.error('⚠️ Monitoreo completado con errores en alguna ubicación');
     console.error('\n💡 Verifica que:');
     console.error('  - El deployment de Vercel esté activo');
     console.error('  - El endpoint /api/cron/check-alerts exista');
