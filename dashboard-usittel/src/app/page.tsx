@@ -34,7 +34,13 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdate, setLastUpdate] = useState<string>('');
-  const [location, setLocation] = useState<'tandil' | 'matanza'>('tandil');
+  const [location, setLocation] = useState<'tandil' | 'matanza'>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('dashboard-location');
+      return (saved as 'tandil' | 'matanza') || 'tandil';
+    }
+    return 'tandil';
+  });
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [graphTimestamp, setGraphTimestamp] = useState<number>(Date.now());
   const [currentTime, setCurrentTime] = useState<string>('');
@@ -63,6 +69,11 @@ export default function Home() {
     console.log('💾 Guardando viewMode:', viewMode);
     localStorage.setItem('dashboard-viewMode', viewMode);
   }, [viewMode]);
+
+  // Guardar ubicación seleccionada
+  useEffect(() => {
+    localStorage.setItem('dashboard-location', location);
+  }, [location]);
 
   // Actualizar hora cada segundo
   useEffect(() => {
@@ -383,7 +394,7 @@ export default function Home() {
                           {sensor.name}
                         </div>
                         <img
-                          src={`/api/chart-proxy?id=${sensor.id}&_=${graphTimestamp}`}
+                          src={`/api/chart-proxy?id=${sensor.id}&location=${location}&_=${graphTimestamp}`}
                           alt={`Gráfico ${sensor.name}`}
                           className="w-full h-auto"
                           loading="lazy"
@@ -422,7 +433,7 @@ export default function Home() {
                           {sensor.name} - Últimas 2 horas
                         </div>
                         <img
-                          src={`/api/chart-proxy?id=${sensor.id}&_=${graphTimestamp}`}
+                          src={`/api/chart-proxy?id=${sensor.id}&location=${location}&_=${graphTimestamp}`}
                           alt={`Gráfico ${sensor.name}`}
                           className="w-full h-auto rounded"
                           loading="lazy"

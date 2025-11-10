@@ -12,14 +12,24 @@ export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
     const sensorId = searchParams.get('id');
+    const location = searchParams.get('location') || 'tandil';
     
     if (!sensorId) {
       return NextResponse.json({ error: 'Sensor ID required' }, { status: 400 });
     }
 
-    const PRTG_BASE_URL = process.env.PRTG_BASE_URL || 'http://38.253.65.250:8080';
-    const PRTG_USERNAME = process.env.PRTG_USERNAME || 'nocittel';
-    const PRTG_PASSHASH = process.env.PRTG_PASSHASH || '413758319';
+    // Seleccionar credenciales según ubicación
+    let PRTG_BASE_URL, PRTG_USERNAME, PRTG_PASSHASH;
+    
+    if (location === 'matanza') {
+      PRTG_BASE_URL = process.env.PRTG_LARANET_BASE_URL || 'http://stats.reditel.com.ar:8995';
+      PRTG_USERNAME = process.env.PRTG_LARANET_USERNAME || 'nocittel';
+      PRTG_PASSHASH = process.env.PRTG_LARANET_PASSHASH || '3903741015';
+    } else {
+      PRTG_BASE_URL = process.env.PRTG_BASE_URL || 'http://38.253.65.250:8080';
+      PRTG_USERNAME = process.env.PRTG_USERNAME || 'nocittel';
+      PRTG_PASSHASH = process.env.PRTG_PASSHASH || '413758319';
+    }
     
     // Construir URL del gráfico
     const chartUrl = `${PRTG_BASE_URL}/chart.png?type=graph&graphid=0&id=${sensorId}&width=1200&height=400&username=${PRTG_USERNAME}&passhash=${PRTG_PASSHASH}`;
