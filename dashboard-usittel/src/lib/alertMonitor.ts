@@ -15,6 +15,7 @@ import {
   saveSystemLog,
   getAlertRuleBySensor,
   getLastAlertForRule,
+  getLastStatusChange,
   type SensorHistory,
   type StatusChange,
   type AlertRule
@@ -245,6 +246,38 @@ async function detectStatusChange(current: SensorHistory) {
       timestamp: current.timestamp,
       trafficValue: currentTraffic || undefined
     });
+    
+    // 🆕 Verificar si hubo recuperación consultando la BD (en caso de reinicio)
+    if (current.status_raw === 3) {
+      const lastChange = await getLastStatusChange(sensorId);
+      
+      // Si el último cambio registrado fue a un estado no-UP, es una recuperación
+      if (lastChange && !lastChange.new_status.toLowerCase().includes('up') && 
+          !lastChange.new_status.toLowerCase().includes('disponible')) {
+        
+        console.log(`✅ [BD] Recuperación detectada: ${current.sensor_name} (${lastChange.new_status} → UP)`);
+        
+        const recoveryChange: StatusChange = {
+          sensor_id: current.sensor_id,
+          sensor_name: current.sensor_name,
+          old_status: lastChange.new_status,
+          new_status: current.status,
+          timestamp: current.timestamp
+        };
+        
+        await checkRecoveryAlerts(current, recoveryChange);
+        
+        // Guardar el cambio de estado para no alertar de nuevo
+        await saveStatusChange(recoveryChange);
+        
+        // Limpiar los estados alertados
+        const rules = await getAlertRuleBySensor(sensorId);
+        for (const rule of rules) {
+          const stateKey = `${rule.id}_${sensorId}`;
+          lastAlertedStates.delete(stateKey);
+        }
+      }
+    }
     
     // Evaluar reglas de umbral
     await checkThresholdAlerts(current);

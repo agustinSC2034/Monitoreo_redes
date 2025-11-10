@@ -296,6 +296,26 @@ export async function getLastAlertForRule(ruleId: number, sensorId: string): Pro
   return data && data.length > 0 ? data[0] : null;
 }
 
+/**
+ * 🔍 Obtener el último cambio de estado registrado para un sensor
+ */
+export async function getLastStatusChange(sensorId: string): Promise<StatusChange | null> {
+  const db = getDB();
+  const { data, error } = await db
+    .from('status_changes')
+    .select('*')
+    .eq('sensor_id', sensorId)
+    .order('timestamp', { ascending: false })
+    .limit(1);
+  
+  if (error) {
+    console.error('❌ Error obteniendo último cambio de estado:', error);
+    return null;
+  }
+  
+  return data && data.length > 0 ? data[0] : null;
+}
+
 // ========== STATUS CHANGES ==========
 
 export async function saveStatusChange(change: StatusChange) {
