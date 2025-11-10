@@ -20,7 +20,7 @@ interface AlertRule {
 export default function AlertasConfigPage() {
   const [rules, setRules] = useState<AlertRule[]>([]);
   const [loading, setLoading] = useState(true);
-  const [locationFilter, setLocationFilter] = useState<'all' | 'tandil' | 'matanza'>('all');
+  const [locationFilter, setLocationFilter] = useState<'tandil' | 'matanza'>('tandil'); // Removido 'all', por defecto 'tandil'
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
 
   useEffect(() => {
@@ -82,9 +82,8 @@ export default function AlertasConfigPage() {
   };
 
   // Filtrar por ubicación
-  const filteredRules = locationFilter === 'all' 
-    ? rules 
-    : rules.filter(rule => getSensorLocation(rule.sensor_id) === locationFilter);
+  // Filtrar siempre por ubicación (no hay opción 'all')
+  const filteredRules = rules.filter(rule => getSensorLocation(rule.sensor_id) === locationFilter);
 
   const enabledRules = filteredRules.filter(r => r.enabled);
   const disabledRules = filteredRules.filter(r => !r.enabled);
@@ -243,22 +242,8 @@ export default function AlertasConfigPage() {
             </span>
             <div className="flex rounded-md overflow-hidden border">
               <button
-                onClick={() => setLocationFilter('all')}
-                className={`px-3 py-1.5 text-xs sm:text-sm transition-colors ${
-                  locationFilter === 'all'
-                    ? theme === 'light'
-                      ? 'bg-gray-900 text-white'
-                      : 'bg-white text-gray-900'
-                    : theme === 'light'
-                      ? 'bg-white text-gray-700 hover:bg-gray-50'
-                      : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-                } ${theme === 'light' ? 'border-gray-300' : 'border-gray-600'}`}
-              >
-                Todas
-              </button>
-              <button
                 onClick={() => setLocationFilter('tandil')}
-                className={`px-3 py-1.5 text-xs sm:text-sm transition-colors border-l ${
+                className={`px-3 py-1.5 text-xs sm:text-sm transition-colors ${
                   locationFilter === 'tandil'
                     ? theme === 'light'
                       ? 'bg-gray-900 text-white'

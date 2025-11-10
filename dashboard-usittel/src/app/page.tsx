@@ -49,10 +49,10 @@ export default function Home() {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('dashboard-viewMode');
       console.log('🔍 Cargando viewMode desde localStorage:', saved);
-      return (saved as 'grid' | 'list') || 'grid';
+      return (saved as 'grid' | 'list') || 'list'; // Cambio: por defecto 'list' en lugar de 'grid'
     }
-    return 'grid';
-  }); // Vista: grid (actual) o list (sensor+gráfico)
+    return 'list'; // Cambio: por defecto 'list' en lugar de 'grid'
+  }); // Vista: grid (cuadrícula) o list (sensor+gráfico lado a lado)
 
   // Cargar y guardar tema
   useEffect(() => {
