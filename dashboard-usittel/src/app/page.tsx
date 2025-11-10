@@ -103,7 +103,7 @@ export default function Home() {
   // Obtener datos de la API
   const fetchSensors = async () => {
     try {
-      const response = await fetch('/api/status');
+      const response = await fetch(`/api/status?location=${location}`);
       
       if (!response.ok) {
         throw new Error(`Error HTTP: ${response.status}`);
@@ -133,12 +133,13 @@ export default function Home() {
     }
   };
 
-  // Auto-actualización cada 2 minutos
+  // Auto-actualización cada 2 minutos - y cuando cambie la ubicación
   useEffect(() => {
+    setLoading(true);
     fetchSensors();
     const interval = setInterval(fetchSensors, 120000);
     return () => clearInterval(interval);
-  }, []);
+  }, [location]); // ← Agregado location como dependencia
 
   return (
     <div className={`min-h-screen ${
@@ -163,6 +164,11 @@ export default function Home() {
                 theme === 'light' ? 'text-gray-900' : 'text-white'
               }`}>
                 ITTEL Monitoreo
+                <span className={`text-sm ml-2 ${
+                  theme === 'light' ? 'text-gray-500' : 'text-gray-400'
+                }`}>
+                  {location === 'tandil' ? '(Tandil)' : '(La Matanza)'}
+                </span>
               </div>
             </div>
             

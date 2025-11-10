@@ -2,7 +2,7 @@
  * 🧪 Test de APIs - Verificar que ambas ubicaciones funcionen
  */
 
-const VERCEL_URL = 'https://monitoreo-redes-3jmn5u3aw-agustins-projects-03ad7204.vercel.app';
+const VERCEL_URL = 'https://monitoreo-redes-k81m2928u-agustins-projects-03ad7204.vercel.app';
 
 async function testAPI(location) {
   console.log(`\n${'='.repeat(80)}`);
