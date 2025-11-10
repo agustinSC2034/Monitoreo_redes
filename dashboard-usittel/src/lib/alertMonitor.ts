@@ -32,6 +32,9 @@ const lastKnownStates = new Map<string, {
 // Mapa para trackear últimas alertas enviadas (cooldown por regla)
 const lastAlertTimes = new Map<string, number>();
 
+// 🆕 Mapa para trackear el último estado por el cual se alertó (evitar alertas repetidas del mismo estado)
+const lastAlertedStates = new Map<string, string>(); // key: "ruleId_sensorId", value: "status"
+
 // 🆕 Mapa para trackear últimos checks de historial (evitar duplicados)
 const lastHistoryChecks = new Map<string, number>();
 
@@ -218,6 +221,16 @@ async function detectStatusChange(current: SensorHistory) {
       trafficValue: currentTraffic || undefined
     });
     
+    // 🆕 Si el sensor volvió a estado normal (UP), limpiar los estados alertados
+    // para que pueda alertar nuevamente si vuelve a fallar
+    if (current.status_raw === 3) { // 3 = UP
+      const rules = await getAlertRuleBySensor(sensorId);
+      for (const rule of rules) {
+        const stateKey = `${rule.id}_${sensorId}`;
+        lastAlertedStates.delete(stateKey);
+      }
+    }
+    
     // Verificar si hay que disparar alertas por cambio de estado
     await checkAndTriggerAlerts(current, change);
   } else {
@@ -327,6 +340,15 @@ async function checkThresholdAlerts(sensor: SensorHistory) {
     // Nota: traffic_spike y traffic_drop se manejan en detectTrafficChange
     if (!['slow', 'down', 'warning'].includes(rule.condition)) continue;
     
+    // 🆕 Verificar si el estado cambió desde la última alerta
+    const stateKey = `${rule.id}_${sensor.sensor_id}`;
+    const lastAlertedStatus = lastAlertedStates.get(stateKey);
+    
+    // Si el estado es el mismo que cuando se alertó por última vez, NO alertar de nuevo
+    if (lastAlertedStatus === sensor.status) {
+      continue;
+    }
+    
     // Verificar cooldown
     const cooldownKey = `${rule.id}_${sensor.sensor_id}`;
     const lastAlertTime = lastAlertTimes.get(cooldownKey);
@@ -340,9 +362,11 @@ async function checkThresholdAlerts(sensor: SensorHistory) {
     const shouldTrigger = evaluateAlertCondition(rule, sensor, dummyChange);
     
     if (shouldTrigger) {
-      console.log(`🚨 Condición detectada: ${rule.name}`);
+      console.log(`🚨 Condición detectada: ${rule.name} (estado: ${sensor.status})`);
       await triggerAlert(rule, sensor, dummyChange);
       lastAlertTimes.set(cooldownKey, now);
+      // 🆕 Guardar el estado por el cual se alertó
+      lastAlertedStates.set(stateKey, sensor.status);
     }
   }
 }

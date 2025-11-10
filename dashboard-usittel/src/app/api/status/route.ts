@@ -116,10 +116,35 @@ export async function GET(request: NextRequest) {
         }
       } else if (typeof adjustedLastCheck === 'string' && adjustedLastCheck) {
         // Para LARANET, solo limpiar el formato (ya viene en hora local)
-        adjustedLastCheck = adjustedLastCheck
+        console.log(`[DEBUG-LARANET] Original lastcheck: "${adjustedLastCheck}"`);
+        
+        const clean = adjustedLastCheck
           .replace(/<[^>]*>/g, '') // Quitar tags HTML
           .replace(/\[hace[^\]]*\]/g, '') // Quitar "[hace X s]"
           .trim();
+        
+        console.log(`[DEBUG-LARANET] Limpio: "${clean}"`);
+        
+        // Buscar si hay formato 12h con AM/PM
+        const match12h = clean.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2}):(\d{2})\s+(AM|PM)/i);
+        console.log(`[DEBUG-LARANET] Match 12h:`, match12h);
+        
+        if (match12h) {
+          const [, dd, mm, yyyy, HH, MM, SS, ampm] = match12h;
+          let hours = parseInt(HH);
+          
+          // Convertir a formato 24h
+          if (ampm.toUpperCase() === 'PM' && hours !== 12) {
+            hours += 12;
+          } else if (ampm.toUpperCase() === 'AM' && hours === 12) {
+            hours = 0;
+          }
+          
+          adjustedLastCheck = `${dd.padStart(2, '0')}/${mm.padStart(2, '0')}/${yyyy} ${String(hours).padStart(2, '0')}:${MM}:${SS}`;
+          console.log(`[DEBUG-LARANET] Convertido a 24h: "${adjustedLastCheck}"`);
+        } else {
+          adjustedLastCheck = clean;
+        }
       }
       
       return {
