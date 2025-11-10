@@ -383,6 +383,17 @@ async function checkAndTriggerAlerts(sensor: SensorHistory, change: StatusChange
   }
   
   for (const rule of rules) {
+    // 🆕 Verificar si el estado cambió desde la última alerta (para reglas down/warning)
+    if (['down', 'warning'].includes(rule.condition)) {
+      const stateKey = `${rule.id}_${sensor.sensor_id}`;
+      const lastAlertedStatus = lastAlertedStates.get(stateKey);
+      
+      // Si el estado es el mismo que cuando se alertó por última vez, NO alertar de nuevo
+      if (lastAlertedStatus === sensor.status) {
+        continue;
+      }
+    }
+    
     // Verificar cooldown
     const cooldownKey = `${rule.id}_${sensor.sensor_id}`;
     const lastAlertTime = lastAlertTimes.get(cooldownKey);
@@ -400,6 +411,12 @@ async function checkAndTriggerAlerts(sensor: SensorHistory, change: StatusChange
       console.log(`🚨 Disparando alerta: ${rule.name}`);
       await triggerAlert(rule, sensor, change);
       lastAlertTimes.set(cooldownKey, now);
+      
+      // 🆕 Guardar el estado por el cual se alertó (para reglas down/warning)
+      if (['down', 'warning'].includes(rule.condition)) {
+        const stateKey = `${rule.id}_${sensor.sensor_id}`;
+        lastAlertedStates.set(stateKey, sensor.status);
+      }
     }
   }
 }
