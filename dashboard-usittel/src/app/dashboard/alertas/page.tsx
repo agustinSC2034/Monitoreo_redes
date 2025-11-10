@@ -28,6 +28,7 @@ export default function AlertasPage() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'success' | 'failed'>('all');
   const [dateFilter, setDateFilter] = useState<'all' | '24h' | '7d' | '30d'>('all');
+  const [locationFilter, setLocationFilter] = useState<'all' | 'tandil' | 'matanza'>('all');
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
 
   useEffect(() => {
@@ -54,7 +55,25 @@ export default function AlertasPage() {
     }
   };
 
+  // Determinar ubicación basada en sensor_id
+  const getSensorLocation = (sensorId: string): 'tandil' | 'matanza' => {
+    const tandilIds = ['13682', '13684', '13683', '2137', '13673'];
+    const matanzaIds = ['5187', '4736', '4737', '5159', '3942', '6689', '4665', '4642'];
+    
+    if (tandilIds.includes(sensorId)) return 'tandil';
+    if (matanzaIds.includes(sensorId)) return 'matanza';
+    
+    // Fallback: si no está en ninguna lista, asumir tandil (legacy)
+    return 'tandil';
+  };
+
   const filteredAlerts = alerts.filter(alert => {
+    // Filtro por ubicación
+    if (locationFilter !== 'all') {
+      const alertLocation = getSensorLocation(alert.sensor_id);
+      if (alertLocation !== locationFilter) return false;
+    }
+    
     // Filtro por estado
     if (filter === 'success' && !alert.success) return false;
     if (filter === 'failed' && alert.success) return false;
@@ -148,6 +167,59 @@ export default function AlertasPage() {
           theme === 'light' ? 'bg-white border-gray-200' : 'bg-gray-800 border-gray-700'
         }`}>
           <div className="flex flex-col sm:flex-row gap-4">
+            {/* Filtro por ubicación */}
+            <div className="flex flex-wrap gap-2 items-center">
+              <span className={`text-sm ${
+                theme === 'light' ? 'text-gray-700' : 'text-gray-300'
+              }`}>
+                Ubicación:
+              </span>
+              <div className="flex rounded-md overflow-hidden border">
+                <button
+                  onClick={() => setLocationFilter('all')}
+                  className={`px-3 py-1.5 text-xs sm:text-sm transition-colors ${
+                    locationFilter === 'all'
+                      ? theme === 'light'
+                        ? 'bg-gray-900 text-white'
+                        : 'bg-white text-gray-900'
+                      : theme === 'light'
+                        ? 'bg-white text-gray-700 hover:bg-gray-50'
+                        : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                  } ${theme === 'light' ? 'border-gray-300' : 'border-gray-600'}`}
+                >
+                  Todas
+                </button>
+                <button
+                  onClick={() => setLocationFilter('tandil')}
+                  className={`px-3 py-1.5 text-xs sm:text-sm transition-colors border-l ${
+                    locationFilter === 'tandil'
+                      ? theme === 'light'
+                        ? 'bg-gray-900 text-white'
+                        : 'bg-white text-gray-900'
+                      : theme === 'light'
+                        ? 'bg-white text-gray-700 hover:bg-gray-50'
+                        : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                  } ${theme === 'light' ? 'border-gray-300' : 'border-gray-600'}`}
+                >
+                  USITTEL
+                </button>
+                <button
+                  onClick={() => setLocationFilter('matanza')}
+                  className={`px-3 py-1.5 text-xs sm:text-sm transition-colors border-l ${
+                    locationFilter === 'matanza'
+                      ? theme === 'light'
+                        ? 'bg-gray-900 text-white'
+                        : 'bg-white text-gray-900'
+                      : theme === 'light'
+                        ? 'bg-white text-gray-700 hover:bg-gray-50'
+                        : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                  } ${theme === 'light' ? 'border-gray-300' : 'border-gray-600'}`}
+                >
+                  LARANET
+                </button>
+              </div>
+            </div>
+
             {/* Filtro por estado */}
             <div className="flex flex-wrap gap-2 items-center">
               <span className={`text-sm ${

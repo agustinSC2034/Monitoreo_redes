@@ -20,6 +20,7 @@ interface AlertRule {
 export default function AlertasConfigPage() {
   const [rules, setRules] = useState<AlertRule[]>([]);
   const [loading, setLoading] = useState(true);
+  const [locationFilter, setLocationFilter] = useState<'all' | 'tandil' | 'matanza'>('all');
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
 
   useEffect(() => {
@@ -70,8 +71,23 @@ export default function AlertasConfigPage() {
     }
   };
 
-  const enabledRules = rules.filter(r => r.enabled);
-  const disabledRules = rules.filter(r => !r.enabled);
+  // Determinar ubicación basada en sensor_id
+  const getSensorLocation = (sensorId: string): 'tandil' | 'matanza' => {
+    const tandilIds = ['13682', '13684', '13683', '2137', '13673'];
+    const matanzaIds = ['5187', '4736', '4737', '5159', '3942', '6689', '4665', '4642'];
+    
+    if (tandilIds.includes(sensorId)) return 'tandil';
+    if (matanzaIds.includes(sensorId)) return 'matanza';
+    return 'tandil';
+  };
+
+  // Filtrar por ubicación
+  const filteredRules = locationFilter === 'all' 
+    ? rules 
+    : rules.filter(rule => getSensorLocation(rule.sensor_id) === locationFilter);
+
+  const enabledRules = filteredRules.filter(r => r.enabled);
+  const disabledRules = filteredRules.filter(r => !r.enabled);
 
   const getConditionLabel = (condition: string) => {
     const labels: Record<string, string> = {
@@ -217,6 +233,59 @@ export default function AlertasConfigPage() {
           }`}>
             Visualización en tiempo real de todas las reglas de alertas configuradas
           </p>
+
+          {/* Filtro por ubicación */}
+          <div className="mt-6 flex items-center gap-2">
+            <span className={`text-sm ${
+              theme === 'light' ? 'text-gray-700' : 'text-gray-300'
+            }`}>
+              Filtrar por ubicación:
+            </span>
+            <div className="flex rounded-md overflow-hidden border">
+              <button
+                onClick={() => setLocationFilter('all')}
+                className={`px-3 py-1.5 text-xs sm:text-sm transition-colors ${
+                  locationFilter === 'all'
+                    ? theme === 'light'
+                      ? 'bg-gray-900 text-white'
+                      : 'bg-white text-gray-900'
+                    : theme === 'light'
+                      ? 'bg-white text-gray-700 hover:bg-gray-50'
+                      : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                } ${theme === 'light' ? 'border-gray-300' : 'border-gray-600'}`}
+              >
+                Todas
+              </button>
+              <button
+                onClick={() => setLocationFilter('tandil')}
+                className={`px-3 py-1.5 text-xs sm:text-sm transition-colors border-l ${
+                  locationFilter === 'tandil'
+                    ? theme === 'light'
+                      ? 'bg-gray-900 text-white'
+                      : 'bg-white text-gray-900'
+                    : theme === 'light'
+                      ? 'bg-white text-gray-700 hover:bg-gray-50'
+                      : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                } ${theme === 'light' ? 'border-gray-300' : 'border-gray-600'}`}
+              >
+                USITTEL (Tandil)
+              </button>
+              <button
+                onClick={() => setLocationFilter('matanza')}
+                className={`px-3 py-1.5 text-xs sm:text-sm transition-colors border-l ${
+                  locationFilter === 'matanza'
+                    ? theme === 'light'
+                      ? 'bg-gray-900 text-white'
+                      : 'bg-white text-gray-900'
+                    : theme === 'light'
+                      ? 'bg-white text-gray-700 hover:bg-gray-50'
+                      : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                } ${theme === 'light' ? 'border-gray-300' : 'border-gray-600'}`}
+              >
+                LARANET (La Matanza)
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* Stats */}
