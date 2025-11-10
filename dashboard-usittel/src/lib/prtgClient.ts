@@ -373,10 +373,19 @@ class PRTGClient {
    * NOTA: IPLAN es nuestro proveedor de tránsito IP principal
    */
   async getCriticalSensors() {
-    // IDs según ubicación
+    // IDs según ubicación - ORDEN IMPORTANTE
     const sensorIds = this.location === 'matanza'
-      ? [5187, 4736, 4737, 5159, 3942, 6689, 4665, 4642] // LARANET
-      : [13682, 13684, 13683, 2137, 13673]; // Tandil (USITTEL)
+      ? [
+          5159, // 1. sfp28-10-WANxIPLAN (PRINCIPAL - Internet mayorista)
+          4737, // 2. sfp28-12-WAN1-PPAL (PRINCIPAL - Internet mayorista)
+          3942, // 3. sfp-sfpplus1-WAN LARA1-RDA-1-LARA
+          5187, // 4. VLAN500-WAN (Lomas de Eziza)
+          4736, // 5. sfp28-11-WAN2-BACKUP
+          6689, // 6. IPTV-Modulador 1
+          4665, // 7. VLAN500-WAN (LARA 2.2)
+          4642  // 8. vlan500-iBGP (LARA 2.1)
+        ]
+      : [13682, 13684, 13683, 2137, 13673]; // Tandil (USITTEL) - orden actual
     
     console.log(`🚨 Consultando sensores críticos de ${this.location.toUpperCase()}...`);
     

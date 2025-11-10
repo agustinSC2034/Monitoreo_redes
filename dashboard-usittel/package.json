@@ -9,7 +9,6 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.79.0",
     "@types/better-sqlite3": "^7.6.13",
     "@types/nodemailer": "^7.0.3",
     "better-sqlite3": "^12.4.1",
@@ -23,6 +22,7 @@
     "twilio": "^5.10.4"
   },
   "devDependencies": {
+    "@supabase/supabase-js": "^2.81.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",

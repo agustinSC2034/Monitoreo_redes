@@ -58,14 +58,20 @@ export async function GET(request: NextRequest) {
       };
       
       const nameMappingMatanza: Record<string, string> = {
+        '5159': 'sfp28-10-WANxIPLAN',
+        '4737': 'sfp28-12-WAN1-PPAL',
+        '3942': 'sfp-sfpplus1-WAN LARA1-RDA-1-LARA',
         '5187': 'VLAN500-WAN (Lomas de Eziza)',
         '4736': 'sfp28-11-WAN2-BACKUP',
-        '4737': 'sfp28-12-WAN1-PPAL',
-        '5159': 'sfp28-10-WANxIPLAN',
-        '3942': 'sfp-sfpplus1-WAN',
         '6689': 'IPTV-Modulador 1',
         '4665': 'VLAN500-WAN (LARA 2.2)',
         '4642': 'vlan500-iBGP (LARA 2.1)'
+      };
+      
+      // Enlaces mayoristas (principales) - estos traen Internet desde afuera
+      const wholesaleLinks: Record<string, string[]> = {
+        'tandil': ['13682', '13684', '13683'], // CABASE, IPLANxARSAT, TECO
+        'matanza': ['5159', '4737'] // sfp28-10-WANxIPLAN, sfp28-12-WAN1-PPAL
       };
       
       const nameMapping = location === 'matanza' ? nameMappingMatanza : nameMappingTandil;
@@ -119,7 +125,8 @@ export async function GET(request: NextRequest) {
         lastValue: sensor.lastvalue || 'N/A',
         lastCheck: adjustedLastCheck,
         message: sensor.message || 'Sin mensaje',
-        priority: sensor.priority || 3
+        priority: sensor.priority || 3,
+        isWholesale: wholesaleLinks[location]?.includes(sensorId) || false
       };
     });
 

@@ -17,6 +17,7 @@ interface SensorCardProps {
   theme?: 'light' | 'dark';
   unit?: 'kbit' | 'mbit';
   onUnitChange?: (unit: 'kbit' | 'mbit') => void;
+  isWholesale?: boolean; // Nuevo: indica si es un enlace mayorista principal
 }
 
 export default function SensorCard({ 
@@ -28,7 +29,8 @@ export default function SensorCard({
   lastCheck,
   theme = 'light',
   unit: externalUnit,
-  onUnitChange
+  onUnitChange,
+  isWholesale = false
 }: SensorCardProps) {
   
   const [internalUnit, setInternalUnit] = useState<'kbit' | 'mbit'>('mbit');
@@ -144,11 +146,19 @@ export default function SensorCard({
       <div className={`h-1 ${getStatusColor(statusRaw)}`}></div>
       
       <div className="p-4">
-        {/* Nombre */}
-        <div className={`text-sm font-medium mb-1 ${
+        {/* Nombre con ícono si es mayorista */}
+        <div className={`text-sm font-medium mb-1 flex items-center gap-2 ${
           theme === 'light' ? 'text-gray-900' : 'text-white'
         }`}>
-          {name}
+          {isWholesale && (
+            <span 
+              className="text-base" 
+              title="Enlace mayorista principal"
+            >
+              🌐
+            </span>
+          )}
+          <span>{name}</span>
         </div>
 
         {/* Dispositivo */}
