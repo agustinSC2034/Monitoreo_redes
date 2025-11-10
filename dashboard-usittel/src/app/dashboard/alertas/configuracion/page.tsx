@@ -274,24 +274,7 @@ export default function AlertasConfigPage() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          <div className={`rounded-lg border p-4 ${
-            theme === 'light'
-              ? 'bg-white border-gray-200'
-              : 'bg-gray-800 border-gray-700'
-          }`}>
-            <div className={`text-2xl font-bold ${
-              theme === 'light' ? 'text-gray-900' : 'text-white'
-            }`}>
-              {rules.length}
-            </div>
-            <div className={`text-sm ${
-              theme === 'light' ? 'text-gray-600' : 'text-gray-400'
-            }`}>
-              Total de Reglas
-            </div>
-          </div>
-
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
           <div className={`rounded-lg border p-4 ${
             theme === 'light'
               ? 'bg-white border-gray-200'
@@ -364,19 +347,6 @@ export default function AlertasConfigPage() {
             </div>
           </div>
         )}
-
-        {/* Footer info */}
-        <div className={`mt-8 p-4 rounded-lg border ${
-          theme === 'light'
-            ? 'bg-blue-50 border-blue-200'
-            : 'bg-blue-900/20 border-blue-800'
-        }`}>
-          <p className={`text-sm ${
-            theme === 'light' ? 'text-blue-900' : 'text-blue-200'
-          }`}>
-            Esta página se actualiza automáticamente cada 30 segundos para reflejar los cambios más recientes.
-          </p>
-        </div>
       </div>
     </div>
   );
