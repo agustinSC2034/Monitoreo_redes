@@ -333,7 +333,7 @@ export default function Home() {
           </div>
         )}
 
-        {!loading && !error && location === 'tandil' && (
+        {!loading && !error && (
           <>
             {viewMode === 'grid' ? (
               // Vista Grid (actual): Todos los sensores arriba, todos los gráficos abajo
