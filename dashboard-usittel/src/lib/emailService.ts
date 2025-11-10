@@ -75,7 +75,7 @@ export async function sendAlertEmail(
     const info = await transport.sendMail({
       from: `"ITTEL Monitoreo" <${FROM_EMAIL}>`,
       to: validRecipients.join(', '),
-      subject: `${getPriorityEmoji(priority)} ${subject}`,
+      subject: subject, // Sin emoji ni prioridad
       text: message, // Versión texto plano
       html: htmlContent, // Versión HTML
       headers: priorityHeaders
@@ -141,9 +141,6 @@ function generateEmailHTML(subject: string, message: string, priority: string): 
         <h1 style="margin: 0; font-size: 14px; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; color: #000000;">
           ITTEL Monitoreo
         </h1>
-        <div style="margin-top: 5px; font-size: 11px; color: #6b7280;">
-          Prioridad: <strong style="color: ${priorityColor};">${priorityLabel}</strong>
-        </div>
       </td>
     </tr>
     
@@ -170,15 +167,6 @@ function generateEmailHTML(subject: string, message: string, priority: string): 
       <td style="border-top: 1px solid #e5e7eb; padding-top: 15px; font-size: 11px; color: #9ca3af;">
         <div>Sistema de monitoreo de red - Grupo ITTEL</div>
         <div style="margin-top: 3px;">USITTEL (Tandil) | LARANET (La Matanza)</div>
-        <div style="margin-top: 5px; color: #d1d5db;">
-          ${new Date().toLocaleString('es-AR', { 
-            year: 'numeric',
-            month: '2-digit', 
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit'
-          })}
-        </div>
       </td>
     </tr>
     

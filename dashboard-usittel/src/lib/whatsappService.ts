@@ -133,14 +133,10 @@ export async function sendWhatsAppAlert(
   // Formatear mensaje para WhatsApp (profesional, sin emojis)
   const whatsappMessage = `
 *ITTEL MONITOREO*
-*Prioridad:* ${priority}
 
 *${alertTitle}*
 
 ${alertMessage}
-
-_Sistema de monitoreo de red - Grupo ITTEL_
-_USITTEL (Tandil) | LARANET (La Matanza)_
 `.trim();
   
   // Enviar a cada destinatario

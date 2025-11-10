@@ -442,7 +442,7 @@ class PRTGClient {
    * 
    * Retorna: Array de eventos con { timestamp, status, duration }
    */
-  async detectRecentDowntime(sensorId: number, minutesAgo: number = 2) {
+  async detectRecentDowntime(sensorId: number, minutesAgo: number = 5) {
     const now = new Date();
     const past = new Date(now.getTime() - minutesAgo * 60 * 1000);
     
@@ -482,7 +482,7 @@ class PRTGClient {
       const xmlText = await response.text();
       
       // Extraer items del XML
-      const events: Array<{ timestamp: number; status: string; status_raw: number }> = [];
+      const events: Array<{ timestamp: number; status: string; status_raw: number; trafficMbps: number }> = [];
       const itemRegex = /<item>([\s\S]*?)<\/item>/g;
       let match;
       
@@ -496,47 +496,51 @@ class PRTGClient {
         const excelDate = parseFloat(datetimeRaw);
         const unixTimestamp = Math.floor((excelDate - 25569) * 86400);
         
-        // Extraer estado del sensor (buscar coverage en el XML)
-        // PRTG incluye <coverage> con el porcentaje de uptime
-        // Y también <value_raw channel="Downtime"> para tiempo caído
-        const downtimeMatch = itemContent.match(/<value_raw channel="Downtime">(.*?)<\/value_raw>/);
-        const coverageMatch = itemContent.match(/<coverage>(.*?)<\/coverage>/);
+        // 🚀 NUEVA ESTRATEGIA: Detectar caídas revisando el tráfico real
+        // Buscar el valor de "Trafico suma (velocidad)" en value_raw
+        const trafficMatch = itemContent.match(/<value_raw channel="Trafico suma \(velocidad\)">(.*?)<\/value_raw>/);
         
-        // Si hay downtime > 0, el sensor estuvo DOWN
         let status = 'Up';
         let status_raw = 3; // 3 = Up en PRTG
+        let trafficKbps = 0;
         
-        if (downtimeMatch) {
-          const downtime = parseFloat(downtimeMatch[1]);
-          if (downtime > 0) {
+        if (trafficMatch) {
+          // El valor viene en kbit/s, convertir a Mbit/s
+          trafficKbps = parseFloat(trafficMatch[1]);
+          const trafficMbps = trafficKbps / 1000;
+          
+          // 🔴 Detectar CAÍDA: si el tráfico es menor a 100 Kbit/s (casi 0)
+          // Esto es mucho más confiable que buscar campos "Downtime" que no existen
+          if (trafficKbps < 100) {
             status = 'Down';
             status_raw = 5; // 5 = Down en PRTG
-          }
-        }
-        
-        // También revisar si coverage < 100% indica problema
-        if (coverageMatch) {
-          const coverage = parseInt(coverageMatch[1]);
-          if (coverage < 100 && status === 'Up') {
+            console.log(`🔴 [DOWNTIME DETECTED] Sensor ${sensorId} - Tráfico caído a ${trafficKbps.toFixed(0)} Kbit/s (${new Date(unixTimestamp * 1000).toLocaleString()})`);
+          } else if (trafficKbps < 500) {
+            // Warning si está muy bajo pero no en 0
             status = 'Warning';
-            status_raw = 4; // 4 = Warning en PRTG
+            status_raw = 4;
+            console.log(`⚠️ [LOW TRAFFIC] Sensor ${sensorId} - Tráfico bajo: ${trafficKbps.toFixed(0)} Kbit/s`);
           }
+          
+          events.push({
+            timestamp: unixTimestamp,
+            status,
+            status_raw,
+            trafficMbps: trafficKbps / 1000
+          });
         }
-        
-        events.push({
-          timestamp: unixTimestamp,
-          status,
-          status_raw
-        });
       }
       
-      // Filtrar solo eventos DOWN o WARNING
+      // Filtrar solo eventos DOWN o WARNING (tráfico < 500 Kbit/s)
       const downtimeEvents = events.filter(e => e.status_raw === 5 || e.status_raw === 4);
       
       if (downtimeEvents.length > 0) {
-        console.log(`🚨 [HISTORY CHECK] Se encontraron ${downtimeEvents.length} eventos de problema en historial`);
+        console.log(`🚨 [HISTORY CHECK] Se encontraron ${downtimeEvents.length} eventos de problema en historial:`);
+        downtimeEvents.forEach(evt => {
+          console.log(`   - ${new Date(evt.timestamp * 1000).toLocaleString()}: ${evt.status} (${evt.trafficMbps.toFixed(2)} Mbit/s)`);
+        });
       } else {
-        console.log(`✅ [HISTORY CHECK] No se encontraron problemas en historial`);
+        console.log(`✅ [HISTORY CHECK] No se encontraron problemas en historial (tráfico normal en todos los puntos)`);
       }
       
       return downtimeEvents;

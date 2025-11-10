@@ -112,10 +112,10 @@ export default function HistoricalChart({
   const UnitButton = ({ unitType, label }: { unitType: 'kbit' | 'mbit', label: string }) => (
     <button
       onClick={() => setUnit(unitType)}
-      className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+      className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 hover:scale-105 ${
         unit === unitType
-          ? 'bg-green-600 text-white shadow-md'
-          : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+          ? 'bg-green-600 text-white shadow-md hover:bg-green-700'
+          : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300 hover:border-gray-400'
       }`}
     >
       {label}
@@ -139,7 +139,7 @@ export default function HistoricalChart({
         <h3 className="text-lg font-bold text-gray-900 mb-4">{sensorName}</h3>
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
           <p className="text-red-800">⚠️ Error: {error}</p>
-          <button onClick={fetchData} className="mt-3 px-4 py-2 bg-red-600 text-white rounded-lg">
+          <button onClick={fetchData} className="mt-3 px-4 py-2 bg-red-600 text-white rounded-lg transition-all duration-200 hover:scale-105 hover:bg-red-700">
             Reintentar
           </button>
         </div>

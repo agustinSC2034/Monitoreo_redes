@@ -55,7 +55,13 @@ export default function AlertasConfigPage() {
       const response = await fetch('/api/alerts/rules?all=true');
       const data = await response.json();
       if (data.success) {
-        setRules(data.data);
+        // Parsear campos JSON si vienen como strings
+        const parsedRules = data.data.map((rule: any) => ({
+          ...rule,
+          channels: typeof rule.channels === 'string' ? JSON.parse(rule.channels) : rule.channels,
+          recipients: typeof rule.recipients === 'string' ? JSON.parse(rule.recipients) : rule.recipients
+        }));
+        setRules(parsedRules);
       }
     } catch (error) {
       console.error('Error cargando reglas:', error);
@@ -144,7 +150,7 @@ export default function AlertasConfigPage() {
             Canales:
           </span>
           <p className={theme === 'light' ? 'text-gray-600' : 'text-gray-400'}>
-            {rule.channels.join(', ')}
+            {Array.isArray(rule.channels) ? rule.channels.filter(c => c === 'email').join(', ') : 'email'}
           </p>
         </div>
 
@@ -166,7 +172,7 @@ export default function AlertasConfigPage() {
             Destinatarios:
           </span>
           <p className={theme === 'light' ? 'text-gray-600' : 'text-gray-400'}>
-            {rule.recipients.length}
+            {Array.isArray(rule.recipients) ? rule.recipients.filter(r => r.includes('@')).length : 0}
           </p>
         </div>
       </div>
@@ -270,7 +276,7 @@ export default function AlertasConfigPage() {
           <h2 className={`text-xl font-bold mb-4 ${
             theme === 'light' ? 'text-gray-900' : 'text-white'
           }`}>
-            ✅ Alertas Activas ({enabledRules.length})
+            Alertas Activas ({enabledRules.length})
           </h2>
           
           {enabledRules.length === 0 ? (
@@ -294,7 +300,7 @@ export default function AlertasConfigPage() {
             <h2 className={`text-xl font-bold mb-4 ${
               theme === 'light' ? 'text-gray-900' : 'text-white'
             }`}>
-              ⚪ Alertas Inactivas ({disabledRules.length})
+              Alertas Inactivas ({disabledRules.length})
             </h2>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -314,7 +320,7 @@ export default function AlertasConfigPage() {
           <p className={`text-sm ${
             theme === 'light' ? 'text-blue-900' : 'text-blue-200'
           }`}>
-            💡 Esta página se actualiza automáticamente cada 30 segundos para reflejar los cambios más recientes.
+            Esta página se actualiza automáticamente cada 30 segundos para reflejar los cambios más recientes.
           </p>
         </div>
       </div>

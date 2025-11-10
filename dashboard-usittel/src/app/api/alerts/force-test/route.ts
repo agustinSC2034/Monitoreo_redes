@@ -10,6 +10,7 @@
 import { NextResponse } from 'next/server';
 import { sendTestEmail } from '@/lib/emailService';
 import { sendTestWhatsApp } from '@/lib/whatsappService';
+import { saveAlertHistory } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
 
@@ -63,6 +64,36 @@ export async function GET() {
     // Resumen
     const allSuccess = results.email.sent && results.whatsapp.sent;
     const someSuccess = results.email.sent || results.whatsapp.sent;
+    
+    // 💾 Guardar en historial de alertas si al menos uno funcionó
+    if (someSuccess) {
+      try {
+        const channelsSent = [];
+        if (results.email.sent) channelsSent.push('email');
+        if (results.whatsapp.sent) channelsSent.push('whatsapp');
+        
+        const recipients = [];
+        if (results.email.sent) recipients.push(process.env.ALERT_EMAIL_RECIPIENTS || 'agustin.scutari@it-tel.com.ar');
+        if (results.whatsapp.sent) recipients.push(process.env.ALERT_WHATSAPP_RECIPIENTS || '+5492494515181');
+        
+        await saveAlertHistory({
+          rule_id: 0, // ID 0 para alertas de prueba
+          sensor_id: 'TEST',
+          sensor_name: 'Alerta de Prueba',
+          status: 'TEST',
+          message: 'Esta es una alerta de prueba del sistema. Email y WhatsApp funcionando correctamente.',
+          channels_sent: channelsSent,
+          recipients: recipients,
+          success: allSuccess,
+          error_message: allSuccess ? undefined : `Email: ${results.email.error || 'OK'} | WhatsApp: ${results.whatsapp.error || 'OK'}`
+        });
+        
+        console.log('✅ [TEST] Alerta de prueba guardada en historial');
+      } catch (dbError) {
+        console.error('❌ [TEST] Error guardando en historial:', dbError);
+        // No fallar si no se pudo guardar
+      }
+    }
     
     return NextResponse.json({
       success: allSuccess,

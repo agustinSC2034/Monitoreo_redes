@@ -29,17 +29,22 @@ const lastKnownStates = new Map<string, {
   trafficValue?: number; // Valor de tráfico en Mbit/s
 }>();
 
-// Mapa para trackear últimas alertas enviadas (cooldown)
+// Mapa para trackear últimas alertas enviadas (cooldown por regla)
 const lastAlertTimes = new Map<string, number>();
 
 // 🆕 Mapa para trackear últimos checks de historial (evitar duplicados)
 const lastHistoryChecks = new Map<string, number>();
 
+// 🆕 Mapa para cooldown GLOBAL de WhatsApp por sensor (evitar spam de múltiples reglas)
+const lastWhatsAppBySensor = new Map<string, number>();
+const WHATSAPP_GLOBAL_COOLDOWN = 120; // 2 minutos entre notificaciones WhatsApp del mismo sensor
+
 /**
  * 🚨 Revisar historial PRTG para detectar bajones intermedios
  * 
- * Esta función consulta el historial de PRTG de los últimos 2 minutos
+ * Esta función consulta el historial de PRTG de los últimos 5 minutos
  * para detectar eventos DOWN/WARNING que pudieron ocurrir entre polling.
+ * DETECTA CAÍDAS REALES revisando si el tráfico cayó a 0 o valores muy bajos.
  */
 async function checkHistoricalDowntime(sensor: SensorHistory) {
   const sensorId = sensor.sensor_id;
@@ -58,8 +63,8 @@ async function checkHistoricalDowntime(sensor: SensorHistory) {
     // Importar prtgClient dinámicamente para evitar dependencia circular
     const { default: prtgClient } = await import('./prtgClient');
     
-    // Consultar últimos 2 minutos de historial
-    const events = await prtgClient.detectRecentDowntime(parseInt(sensorId), 2);
+    // Consultar últimos 5 minutos de historial (ventana más amplia para detectar caídas)
+    const events = await prtgClient.detectRecentDowntime(parseInt(sensorId), 5);
     
     if (events.length === 0) {
       return; // No hay eventos, todo bien
@@ -463,7 +468,7 @@ async function triggerAlert(rule: AlertRule, sensor: SensorHistory, change: Stat
             break;
           
           case 'whatsapp':
-            await sendWhatsAppAlertInternal(rule, message);
+            await sendWhatsAppAlertInternal(rule, sensor, message);
             channelResults.push({ channel: 'whatsapp', success: true });
             break;
           
@@ -531,7 +536,15 @@ function formatAlertMessage(rule: AlertRule, sensor: SensorHistory, change: Stat
     timeZone: 'America/Argentina/Buenos_Aires'
   });
   
-  let message = `SENSOR: ${sensor.sensor_name}\n`;
+  // Determinar ubicación según el sensor
+  const location = sensor.sensor_name.includes('(063)') || sensor.sensor_name.includes('CABASE') || 
+                   sensor.sensor_name.includes('IPLAN') || sensor.sensor_name.includes('TECO') ||
+                   sensor.sensor_name.includes('RDA') || sensor.sensor_name.includes('DTV')
+    ? '🔵 USITTEL TANDIL'
+    : '🟢 LARANET LA MATANZA';
+  
+  let message = `${location}\n\n`;
+  message += `SENSOR: ${sensor.sensor_name}\n`;
   
   if (rule.condition === 'slow' && rule.threshold) {
     // Alerta de umbral
@@ -552,9 +565,6 @@ function formatAlertMessage(rule: AlertRule, sensor: SensorHistory, change: Stat
       message += `DURACIÓN ANTERIOR: ${minutes} min\n`;
     }
   }
-  
-  message += `TIMESTAMP: ${timestamp}\n`;
-  message += `PRIORIDAD: ${rule.priority.toUpperCase()}\n`;
   
   if (sensor.message && !sensor.message.includes('<div')) {
     message += `\nDETALLES:\n${sensor.message}`;
@@ -592,7 +602,7 @@ async function sendEmailAlert(rule: AlertRule, message: string) {
 /**
  * 📱 Enviar alerta por WhatsApp usando Twilio
  */
-async function sendWhatsAppAlertInternal(rule: AlertRule, message: string) {
+async function sendWhatsAppAlertInternal(rule: AlertRule, sensor: SensorHistory, message: string) {
   try {
     // Filtrar solo destinatarios de WhatsApp (empiezan con +)
     const whatsappRecipients = rule.recipients.filter(r => r.startsWith('+'));
@@ -601,6 +611,20 @@ async function sendWhatsAppAlertInternal(rule: AlertRule, message: string) {
       console.log('⚠️ No hay destinatarios de WhatsApp configurados');
       return;
     }
+    
+    // 🛡️ COOLDOWN GLOBAL: Evitar spam de múltiples reglas del mismo sensor
+    const sensorId = sensor.sensor_id;
+    const now = Math.floor(Date.now() / 1000);
+    const lastWhatsApp = lastWhatsAppBySensor.get(sensorId);
+    
+    if (lastWhatsApp && (now - lastWhatsApp) < WHATSAPP_GLOBAL_COOLDOWN) {
+      const remaining = WHATSAPP_GLOBAL_COOLDOWN - (now - lastWhatsApp);
+      console.log(`⏳ [WHATSAPP] Cooldown global activo para sensor ${sensorId} (${remaining}s restantes)`);
+      return; // Skip WhatsApp pero permitir email
+    }
+    
+    // Actualizar timestamp de último WhatsApp enviado
+    lastWhatsAppBySensor.set(sensorId, now);
     
     console.log(`📱 [WHATSAPP] Enviando alerta a:`, whatsappRecipients);
     
@@ -640,6 +664,13 @@ export function cleanupOldStates(maxAgeSeconds: number = 3600) {
   for (const [key, timestamp] of lastAlertTimes.entries()) {
     if (timestamp < threshold) {
       lastAlertTimes.delete(key);
+    }
+  }
+  
+  // Limpiar cooldowns globales de WhatsApp
+  for (const [sensorId, timestamp] of lastWhatsAppBySensor.entries()) {
+    if (timestamp < threshold) {
+      lastWhatsAppBySensor.delete(sensorId);
     }
   }
 }

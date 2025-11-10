@@ -15,6 +15,8 @@ interface SensorCardProps {
   lastCheck: string;
   message: string;
   theme?: 'light' | 'dark';
+  unit?: 'kbit' | 'mbit';
+  onUnitChange?: (unit: 'kbit' | 'mbit') => void;
 }
 
 export default function SensorCard({ 
@@ -24,10 +26,22 @@ export default function SensorCard({
   statusRaw, 
   lastValue, 
   lastCheck,
-  theme = 'light'
+  theme = 'light',
+  unit: externalUnit,
+  onUnitChange
 }: SensorCardProps) {
   
-  const [unit, setUnit] = useState<'kbit' | 'mbit'>('mbit');
+  const [internalUnit, setInternalUnit] = useState<'kbit' | 'mbit'>('mbit');
+  const unit = externalUnit !== undefined ? externalUnit : internalUnit;
+  
+  const handleUnitChange = (newUnit: 'kbit' | 'mbit') => {
+    if (onUnitChange) {
+      onUnitChange(newUnit);
+    } else {
+      setInternalUnit(newUnit);
+    }
+  };
+  
   const [now, setNow] = useState<Date>(new Date());
   
   useEffect(() => {
@@ -147,12 +161,12 @@ export default function SensorCard({
         {/* Selector de unidad */}
         <div className="flex gap-1 mb-3">
           <button
-            onClick={() => setUnit('kbit')}
-            className={`flex-1 px-2 py-1 rounded text-xs transition-colors ${
+            onClick={() => handleUnitChange('kbit')}
+            className={`flex-1 px-2 py-1 rounded text-xs transition-all duration-200 hover:scale-105 ${
               unit === 'kbit'
                 ? theme === 'light'
-                  ? 'bg-gray-900 text-white'
-                  : 'bg-white text-gray-900'
+                  ? 'bg-gray-900 text-white hover:bg-gray-800'
+                  : 'bg-white text-gray-900 hover:bg-gray-100'
                 : theme === 'light'
                   ? 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                   : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
@@ -161,12 +175,12 @@ export default function SensorCard({
             kbit/s
           </button>
           <button
-            onClick={() => setUnit('mbit')}
-            className={`flex-1 px-2 py-1 rounded text-xs transition-colors ${
+            onClick={() => handleUnitChange('mbit')}
+            className={`flex-1 px-2 py-1 rounded text-xs transition-all duration-200 hover:scale-105 ${
               unit === 'mbit'
                 ? theme === 'light'
-                  ? 'bg-gray-900 text-white'
-                  : 'bg-white text-gray-900'
+                  ? 'bg-gray-900 text-white hover:bg-gray-800'
+                  : 'bg-white text-gray-900 hover:bg-gray-100'
                 : theme === 'light'
                   ? 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                   : 'bg-gray-700 text-gray-300 hover:bg-gray-600'

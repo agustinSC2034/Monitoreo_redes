@@ -9,8 +9,20 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "ITTEL Monitoreo | Sistema de Vigilancia de Red",
-  description: "Sistema profesional de monitoreo de enlaces WAN - USITTEL Tandil y LARANET La Matanza",
+  title: "ITTEL Monitoreo Redes",
+  description: "Sistema de monitoreo de enlaces - USITTEL | LARANET",
+  manifest: "/manifest.json",
+  themeColor: "#000000",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "ITTEL Monitor",
+  },
+  viewport: {
+    width: "device-width",
+    initialScale: 1,
+    maximumScale: 1,
+  },
 };
 
 export default function RootLayout({
@@ -20,6 +32,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es">
+      <head>
+        <link rel="icon" href="/favicon.ico" sizes="any" />
+        <link rel="apple-touch-icon" href="/icon-192.png" />
+      </head>
       <body className={`${inter.className} antialiased`}>
         {children}
       </body>

@@ -6,6 +6,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+
 import Link from 'next/link';
 
 interface Alert {
@@ -17,7 +18,8 @@ interface Alert {
   message?: string;
   channels_sent: string[];
   recipients: string[];
-  triggered_at: string;
+  timestamp?: number; // Unix timestamp en segundos
+  triggered_at?: string; // ISO string (legacy)
   success: boolean;
 }
 
@@ -25,6 +27,7 @@ export default function AlertasPage() {
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'success' | 'failed'>('all');
+  const [dateFilter, setDateFilter] = useState<'all' | '24h' | '7d' | '30d'>('all');
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
 
   useEffect(() => {
@@ -52,9 +55,35 @@ export default function AlertasPage() {
   };
 
   const filteredAlerts = alerts.filter(alert => {
-    if (filter === 'all') return true;
-    if (filter === 'success') return alert.success;
-    if (filter === 'failed') return !alert.success;
+    // Filtro por estado
+    if (filter === 'success' && !alert.success) return false;
+    if (filter === 'failed' && alert.success) return false;
+    
+    // Filtro por fecha
+    if (dateFilter !== 'all') {
+      let alertTime: number;
+      
+      if (alert.timestamp) {
+        // Unix timestamp en segundos → milisegundos
+        alertTime = alert.timestamp * 1000;
+      } else if (alert.triggered_at) {
+        // ISO string
+        const date = new Date(alert.triggered_at);
+        if (isNaN(date.getTime())) return true;
+        alertTime = date.getTime();
+      } else {
+        return true; // Sin timestamp, incluirla
+      }
+      
+      const now = Date.now();
+      const diffMs = now - alertTime;
+      const diffHours = diffMs / (1000 * 60 * 60);
+      
+      if (dateFilter === '24h' && diffHours > 24) return false;
+      if (dateFilter === '7d' && diffHours > 24 * 7) return false;
+      if (dateFilter === '30d' && diffHours > 24 * 30) return false;
+    }
+    
     return true;
   });
 
@@ -97,13 +126,13 @@ export default function AlertasPage() {
             
             <Link
               href="/dashboard/alertas/configuracion"
-              className={`px-4 py-2 rounded-md border text-sm transition-colors ${
+              className={`px-4 py-2 rounded-md border text-sm transition-all duration-200 hover:scale-105 ${
                 theme === 'light'
-                  ? 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
-                  : 'bg-gray-800 border-gray-600 text-gray-300 hover:bg-gray-700'
+                  ? 'bg-white border-gray-300 text-gray-700 hover:bg-gray-100 hover:border-gray-400'
+                  : 'bg-gray-800 border-gray-600 text-gray-300 hover:bg-gray-750 hover:border-gray-500'
               }`}
             >
-              ⚙️ Configuración
+              Configuración
             </Link>
           </div>
           
@@ -118,55 +147,125 @@ export default function AlertasPage() {
         <div className={`rounded-lg border p-4 mb-6 ${
           theme === 'light' ? 'bg-white border-gray-200' : 'bg-gray-800 border-gray-700'
         }`}>
-          <div className="flex flex-wrap gap-3 items-center">
-            <span className={`text-sm ${
-              theme === 'light' ? 'text-gray-700' : 'text-gray-300'
-            }`}>
-              Filtrar:
-            </span>
-            <div className="flex rounded-md overflow-hidden border">
-              <button
-                onClick={() => setFilter('all')}
-                className={`px-4 py-2 text-sm transition-colors ${
-                  filter === 'all'
-                    ? theme === 'light'
-                      ? 'bg-gray-900 text-white'
-                      : 'bg-white text-gray-900'
-                    : theme === 'light'
-                      ? 'bg-white text-gray-700 hover:bg-gray-50'
-                      : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-                } ${theme === 'light' ? 'border-gray-300' : 'border-gray-600'}`}
-              >
-                Todas ({alerts.length})
-              </button>
-              <button
-                onClick={() => setFilter('success')}
-                className={`px-4 py-2 text-sm transition-colors border-l ${
-                  filter === 'success'
-                    ? theme === 'light'
-                      ? 'bg-gray-900 text-white'
-                      : 'bg-white text-gray-900'
-                    : theme === 'light'
-                      ? 'bg-white text-gray-700 hover:bg-gray-50'
-                      : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-                } ${theme === 'light' ? 'border-gray-300' : 'border-gray-600'}`}
-              >
-                Exitosas ({alerts.filter(a => a.success).length})
-              </button>
-              <button
-                onClick={() => setFilter('failed')}
-                className={`px-4 py-2 text-sm transition-colors border-l ${
-                  filter === 'failed'
-                    ? theme === 'light'
-                      ? 'bg-gray-900 text-white'
-                      : 'bg-white text-gray-900'
-                    : theme === 'light'
-                      ? 'bg-white text-gray-700 hover:bg-gray-50'
-                      : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-                } ${theme === 'light' ? 'border-gray-300' : 'border-gray-600'}`}
-              >
-                Fallidas ({alerts.filter(a => !a.success).length})
-              </button>
+          <div className="flex flex-col sm:flex-row gap-4">
+            {/* Filtro por estado */}
+            <div className="flex flex-wrap gap-2 items-center">
+              <span className={`text-sm ${
+                theme === 'light' ? 'text-gray-700' : 'text-gray-300'
+              }`}>
+                Estado:
+              </span>
+              <div className="flex rounded-md overflow-hidden border">
+                <button
+                  onClick={() => setFilter('all')}
+                  className={`px-3 py-1.5 text-xs sm:text-sm transition-colors ${
+                    filter === 'all'
+                      ? theme === 'light'
+                        ? 'bg-gray-900 text-white'
+                        : 'bg-white text-gray-900'
+                      : theme === 'light'
+                        ? 'bg-white text-gray-700 hover:bg-gray-50'
+                        : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                  } ${theme === 'light' ? 'border-gray-300' : 'border-gray-600'}`}
+                >
+                  Todas
+                </button>
+                <button
+                  onClick={() => setFilter('success')}
+                  className={`px-3 py-1.5 text-xs sm:text-sm transition-colors border-l ${
+                    filter === 'success'
+                      ? theme === 'light'
+                        ? 'bg-gray-900 text-white'
+                        : 'bg-white text-gray-900'
+                      : theme === 'light'
+                        ? 'bg-white text-gray-700 hover:bg-gray-50'
+                        : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                  } ${theme === 'light' ? 'border-gray-300' : 'border-gray-600'}`}
+                >
+                  Exitosas
+                </button>
+                <button
+                  onClick={() => setFilter('failed')}
+                  className={`px-3 py-1.5 text-xs sm:text-sm transition-colors border-l ${
+                    filter === 'failed'
+                      ? theme === 'light'
+                        ? 'bg-gray-900 text-white'
+                        : 'bg-white text-gray-900'
+                      : theme === 'light'
+                        ? 'bg-white text-gray-700 hover:bg-gray-50'
+                        : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                  } ${theme === 'light' ? 'border-gray-300' : 'border-gray-600'}`}
+                >
+                  Fallidas
+                </button>
+              </div>
+            </div>
+
+            {/* Filtro por fecha */}
+            <div className="flex flex-wrap gap-2 items-center">
+              <span className={`text-sm ${
+                theme === 'light' ? 'text-gray-700' : 'text-gray-300'
+              }`}>
+                Período:
+              </span>
+              <div className="flex rounded-md overflow-hidden border">
+                <button
+                  onClick={() => setDateFilter('all')}
+                  className={`px-3 py-1.5 text-xs sm:text-sm transition-colors ${
+                    dateFilter === 'all'
+                      ? theme === 'light'
+                        ? 'bg-gray-900 text-white'
+                        : 'bg-white text-gray-900'
+                      : theme === 'light'
+                        ? 'bg-white text-gray-700 hover:bg-gray-50'
+                        : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                  } ${theme === 'light' ? 'border-gray-300' : 'border-gray-600'}`}
+                >
+                  Todo
+                </button>
+                <button
+                  onClick={() => setDateFilter('24h')}
+                  className={`px-3 py-1.5 text-xs sm:text-sm transition-colors border-l ${
+                    dateFilter === '24h'
+                      ? theme === 'light'
+                        ? 'bg-gray-900 text-white'
+                        : 'bg-white text-gray-900'
+                      : theme === 'light'
+                        ? 'bg-white text-gray-700 hover:bg-gray-50'
+                        : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                  } ${theme === 'light' ? 'border-gray-300' : 'border-gray-600'}`}
+                >
+                  24h
+                </button>
+                <button
+                  onClick={() => setDateFilter('7d')}
+                  className={`px-3 py-1.5 text-xs sm:text-sm transition-colors border-l ${
+                    dateFilter === '7d'
+                      ? theme === 'light'
+                        ? 'bg-gray-900 text-white'
+                        : 'bg-white text-gray-900'
+                      : theme === 'light'
+                        ? 'bg-white text-gray-700 hover:bg-gray-50'
+                        : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                  } ${theme === 'light' ? 'border-gray-300' : 'border-gray-600'}`}
+                >
+                  7 días
+                </button>
+                <button
+                  onClick={() => setDateFilter('30d')}
+                  className={`px-3 py-1.5 text-xs sm:text-sm transition-colors border-l ${
+                    dateFilter === '30d'
+                      ? theme === 'light'
+                        ? 'bg-gray-900 text-white'
+                        : 'bg-white text-gray-900'
+                      : theme === 'light'
+                        ? 'bg-white text-gray-700 hover:bg-gray-50'
+                        : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                  } ${theme === 'light' ? 'border-gray-300' : 'border-gray-600'}`}
+                >
+                  30 días
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -215,6 +314,36 @@ export default function AlertasPage() {
                         theme === 'light' ? 'text-gray-500' : 'text-gray-400'
                       }`}>
                         {(() => {
+                          // Prioridad 1: timestamp (Unix en segundos)
+                          if (alert.timestamp) {
+                            const date = new Date(alert.timestamp * 1000);
+                            return date.toLocaleString('es-AR', {
+                              year: 'numeric',
+                              month: '2-digit',
+                              day: '2-digit',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                              second: '2-digit',
+                              hour12: true
+                            });
+                          }
+                          
+                          // Prioridad 2: triggered_at (ISO string)
+                          if (alert.triggered_at) {
+                            const date = new Date(alert.triggered_at);
+                            if (isNaN(date.getTime())) return 'Invalid Date';
+                            return date.toLocaleString('es-AR', {
+                              year: 'numeric',
+                              month: '2-digit',
+                              day: '2-digit',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                              second: '2-digit',
+                              hour12: true
+                            });
+                          }
+                          
+                          // Prioridad 3: Buscar en el mensaje (legacy)
                           const timestampMatch = alert.message?.match(/TIMESTAMP:\s*(\d{1,2})\/(\d{1,2})\/(\d{4}),?\s*(\d{2}):(\d{2}):(\d{2})/);
                           if (timestampMatch) {
                             const [, dd, mm, yyyy, HH, MM, SS] = timestampMatch;
@@ -226,25 +355,20 @@ export default function AlertasPage() {
                               parseInt(MM),
                               parseInt(SS)
                             );
-                            return date.toLocaleString('es-AR', {
-                              year: 'numeric',
-                              month: '2-digit',
-                              day: '2-digit',
-                              hour: '2-digit',
-                              minute: '2-digit',
-                              second: '2-digit',
-                              hour12: true
-                            });
+                            if (!isNaN(date.getTime())) {
+                              return date.toLocaleString('es-AR', {
+                                year: 'numeric',
+                                month: '2-digit',
+                                day: '2-digit',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                second: '2-digit',
+                                hour12: true
+                              });
+                            }
                           }
-                          return new Date(alert.triggered_at).toLocaleString('es-AR', {
-                            year: 'numeric',
-                            month: '2-digit',
-                            day: '2-digit',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                            second: '2-digit',
-                            hour12: true
-                          });
+                          
+                          return 'N/A';
                         })()}
                       </div>
                     </div>
