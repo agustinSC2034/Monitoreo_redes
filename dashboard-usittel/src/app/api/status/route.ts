@@ -78,9 +78,9 @@ export async function GET(request: NextRequest) {
       
       const sensorId = String(sensor.objid || sensor.objid_raw || 'unknown');
       
-      // ⏰ Ajustar timezone del lastcheck
+      // ⏰ Ajustar timezone del lastcheck (solo para Tandil)
       let adjustedLastCheck = sensor.lastcheck || '';
-      if (typeof adjustedLastCheck === 'string' && adjustedLastCheck) {
+      if (typeof adjustedLastCheck === 'string' && adjustedLastCheck && location === 'tandil') {
         console.log(`[DEBUG-TZ] Original: "${adjustedLastCheck}"`);
         // Quitar HTML y texto "[hace X]"
         const clean = adjustedLastCheck
@@ -114,6 +114,12 @@ export async function GET(request: NextRequest) {
           adjustedLastCheck = `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
           console.log(`[TIMEZONE] Ajustado: ${sensor.lastcheck} -> ${adjustedLastCheck}`);
         }
+      } else if (typeof adjustedLastCheck === 'string' && adjustedLastCheck) {
+        // Para LARANET, solo limpiar el formato (ya viene en hora local)
+        adjustedLastCheck = adjustedLastCheck
+          .replace(/<[^>]*>/g, '') // Quitar tags HTML
+          .replace(/\[hace[^\]]*\]/g, '') // Quitar "[hace X s]"
+          .trim();
       }
       
       return {
