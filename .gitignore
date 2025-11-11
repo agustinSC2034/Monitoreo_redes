@@ -14,3 +14,4 @@ SECRETS*.md
 
 # Archivos de configuración local
 *.local.*
+.vercel

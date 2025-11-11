@@ -432,6 +432,19 @@ async function checkRecoveryAlerts(sensor: SensorHistory, change: StatusChange) 
     return;
   }
   
+  // 🔴 FILTRO ESPECIAL: No alertar recuperaciones de Warning→Disponible para TECO
+  // TECO fluctúa constantemente entre Warning y Disponible por tráfico bajo
+  // Solo alertar si viene de DOWN real (caída completa del enlace)
+  if (sensor.sensor_id === '13683') {
+    const isFromWarning = change.old_status.toLowerCase().includes('warning') ||
+                          change.old_status.toLowerCase().includes('advertencia');
+    
+    if (isFromWarning) {
+      console.log(`⏸️ [TECO] Omitiendo alerta de recuperación desde Warning (fluctuación normal)`);
+      return; // Skip alerta de recuperación desde Warning
+    }
+  }
+  
   for (const rule of rules) {
     // Solo disparar para reglas de tipo "down" que ahora se recuperaron
     if (rule.condition !== 'down') continue;
@@ -528,6 +541,17 @@ async function checkAndTriggerAlerts(sensor: SensorHistory, change: StatusChange
 function evaluateAlertCondition(rule: AlertRule, sensor: SensorHistory, change: StatusChange): boolean {
   switch (rule.condition) {
     case 'down':
+      // 🔴 FILTRO ESPECIAL TECO: Solo alertar DOWN, ignorar Warning
+      if (sensor.sensor_id === '13683') {
+        // TECO solo alerta si está realmente DOWN (status_raw === 5)
+        // Ignorar Warning (status_raw === 4) porque fluctúa por tráfico bajo
+        const isRealDown = sensor.status_raw === 5;
+        if (!isRealDown) {
+          console.log(`⏸️ [TECO] Ignorando alerta de Warning (solo se alerta DOWN)`);
+          return false;
+        }
+      }
+      
       // Disparar si el sensor está DOWN
       return sensor.status_raw === 5 || sensor.status.toLowerCase().includes('down');
     
