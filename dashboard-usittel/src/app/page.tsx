@@ -171,15 +171,28 @@ export default function Home() {
                 alt="ITTEL Logo" 
                 className="w-8 h-8 sm:w-10 sm:h-10"
               />
-              <div className={`text-lg sm:text-2xl font-light ${
-                theme === 'light' ? 'text-gray-900' : 'text-white'
-              }`}>
-                ITTEL Monitoreo
-                <span className={`text-sm ml-2 ${
+              <div>
+                <div className={`text-lg sm:text-2xl font-light ${
+                  theme === 'light' ? 'text-gray-900' : 'text-white'
+                }`}>
+                  ITTEL Monitoreo
+                  <span className={`text-sm ml-2 ${
+                    theme === 'light' ? 'text-gray-500' : 'text-gray-400'
+                  }`}>
+                    {location === 'tandil' ? '(Tandil)' : '(La Matanza)'}
+                  </span>
+                </div>
+                {/* Hora actual y última actualización */}
+                <div className={`text-xs mt-1 ${
                   theme === 'light' ? 'text-gray-500' : 'text-gray-400'
                 }`}>
-                  {location === 'tandil' ? '(Tandil)' : '(La Matanza)'}
-                </span>
+                  {currentTime && (
+                    <span>Hora actual: {currentTime}</span>
+                  )}
+                  {lastUpdate && (
+                    <span className="ml-3">Última actualización: {lastUpdate}</span>
+                  )}
+                </div>
               </div>
             </div>
             
