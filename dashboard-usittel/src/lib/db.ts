@@ -189,7 +189,13 @@ export async function getAlertRules(activeOnly: boolean = true): Promise<AlertRu
     return [];
   }
   
-  return data || [];
+  // Parsear channels si viene como string
+  const rules = (data || []).map(rule => ({
+    ...rule,
+    channels: typeof rule.channels === 'string' ? JSON.parse(rule.channels) : rule.channels
+  }));
+  
+  return rules;
 }
 
 export async function getAlertRuleBySensor(sensorId: string): Promise<AlertRule[]> {
@@ -205,7 +211,13 @@ export async function getAlertRuleBySensor(sensorId: string): Promise<AlertRule[
     return [];
   }
   
-  return data || [];
+  // Parsear channels si viene como string
+  const rules = (data || []).map(rule => ({
+    ...rule,
+    channels: typeof rule.channels === 'string' ? JSON.parse(rule.channels) : rule.channels
+  }));
+  
+  return rules;
 }
 
 export async function updateAlertRule(id: number, updates: Partial<AlertRule>) {

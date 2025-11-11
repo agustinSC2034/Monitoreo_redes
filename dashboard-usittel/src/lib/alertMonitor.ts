@@ -324,10 +324,17 @@ async function detectTrafficChange(
     // Verificar si hay reglas para este tipo de cambio
     const rules = await getAlertRuleBySensor(sensor.sensor_id);
     for (const rule of rules) {
+      // ⏸️ ALERTAS DE TRÁFICO DESACTIVADAS TEMPORALMENTE
+      // Mantener lógica pero no disparar alertas hasta confirmar umbrales
       if (
         (change > 0 && rule.condition === 'traffic_spike' && absChange > (rule.threshold || 50)) ||
         (change < 0 && rule.condition === 'traffic_drop' && absChange > (rule.threshold || 50))
       ) {
+        console.log(`⏸️ [DESACTIVADO] Alerta de cambio de tráfico: ${rule.name} (${absChange.toFixed(1)}%)`);
+        continue; // Skip - alertas de tráfico desactivadas
+        
+        // TODO: Reactivar cuando se confirmen capacidades reales de enlaces
+        /*
         // Verificar cooldown
         const cooldownKey = `${rule.id}_${sensor.sensor_id}`;
         const lastAlertTime = lastAlertTimes.get(cooldownKey);
@@ -348,6 +355,7 @@ async function detectTrafficChange(
           await triggerAlert(rule, sensor, trafficChange);
           lastAlertTimes.set(cooldownKey, now);
         }
+        */
       }
     }
   }
