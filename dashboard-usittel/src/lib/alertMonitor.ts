@@ -373,9 +373,9 @@ async function checkThresholdAlerts(sensor: SensorHistory) {
   };
   
   for (const rule of rules) {
-    // Evaluar reglas de tipo 'slow', 'down', 'warning'
+    // Evaluar reglas de tipo 'slow', 'down' (Warning desactivado globalmente)
     // Nota: traffic_spike y traffic_drop se manejan en detectTrafficChange
-    if (!['slow', 'down', 'warning'].includes(rule.condition)) continue;
+    if (!['slow', 'down'].includes(rule.condition)) continue;
     
     // Skip si la regla no tiene ID (no debería pasar)
     if (!rule.id) continue;
@@ -487,8 +487,9 @@ async function checkAndTriggerAlerts(sensor: SensorHistory, change: StatusChange
     // Skip si la regla no tiene ID
     if (!rule.id) continue;
     
-    // 🆕 Verificar si el estado cambió desde la última alerta (para reglas down/warning)
-    if (['down', 'warning'].includes(rule.condition)) {
+    // 🆕 Verificar si el estado cambió desde la última alerta (para reglas down solamente)
+    // Warning desactivado globalmente
+    if (['down'].includes(rule.condition)) {
       const stateKey = `${rule.id}_${sensor.sensor_id}`;
       const lastAlertedStatus = lastAlertedStates.get(stateKey);
       
@@ -526,8 +527,8 @@ async function checkAndTriggerAlerts(sensor: SensorHistory, change: StatusChange
       await triggerAlert(rule, sensor, change);
       lastAlertTimes.set(cooldownKey, now);
       
-      // 🆕 Guardar el estado por el cual se alertó (para reglas down/warning)
-      if (['down', 'warning'].includes(rule.condition)) {
+      // 🆕 Guardar el estado por el cual se alertó (para reglas down solamente)
+      if (['down'].includes(rule.condition)) {
         const stateKey = `${rule.id}_${sensor.sensor_id}`;
         lastAlertedStates.set(stateKey, sensor.status);
       }
@@ -556,8 +557,9 @@ function evaluateAlertCondition(rule: AlertRule, sensor: SensorHistory, change: 
       return sensor.status_raw === 5 || sensor.status.toLowerCase().includes('down');
     
     case 'warning':
-      // Disparar si el sensor está en WARNING
-      return sensor.status_raw === 4 || sensor.status.toLowerCase().includes('warning');
+      // ⏸️ WARNING DESACTIVADO GLOBALMENTE
+      // No se envían alertas de Warning para ningún sensor
+      return false;
     
     case 'unusual':
       // Disparar en cualquier estado no-UP
