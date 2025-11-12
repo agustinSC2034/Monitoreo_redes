@@ -475,7 +475,7 @@ async function checkRecoveryAlerts(sensor: SensorHistory, change: StatusChange) 
       new_status: change.new_status + ' ✅'
     };
     
-    await triggerAlert(rule, sensor, recoveryChange);
+    await triggerAlert(rule, sensor, recoveryChange, true); // true = es recuperación
     lastAlertTimes.set(cooldownKey, now);
   }
 }
@@ -626,7 +626,7 @@ function parseTrafficValue(lastvalue: string): number | null {
 /**
  * 📧 Disparar alerta (enviar notificaciones)
  */
-async function triggerAlert(rule: AlertRule, sensor: SensorHistory, change: StatusChange) {
+async function triggerAlert(rule: AlertRule, sensor: SensorHistory, change: StatusChange, isRecovery: boolean = false) {
   const timestamp = Math.floor(Date.now() / 1000);
   
   try {
@@ -640,7 +640,7 @@ async function triggerAlert(rule: AlertRule, sensor: SensorHistory, change: Stat
       try {
         switch (channel) {
           case 'email':
-            await sendEmailAlert(rule, message);
+            await sendEmailAlert(rule, message, isRecovery);
             channelResults.push({ channel: 'email', success: true });
             break;
           
@@ -743,9 +743,12 @@ function formatAlertMessage(rule: AlertRule, sensor: SensorHistory, change: Stat
     }
   }
   
-  if (sensor.message && !sensor.message.includes('<div')) {
-    message += `\nDETALLES:\n${sensor.message}`;
-  }
+  message += `TIMESTAMP: ${timestamp}\n`;
+  
+  // ❌ Eliminado: No mostrar detalles técnicos de PRTG
+  // if (sensor.message && !sensor.message.includes('<div')) {
+  //   message += `\nDETALLES:\n${sensor.message}`;
+  // }
   
   return message;
 }
@@ -753,7 +756,7 @@ function formatAlertMessage(rule: AlertRule, sensor: SensorHistory, change: Stat
 /**
  * 📧 Enviar alerta por email (REAL)
  */
-async function sendEmailAlert(rule: AlertRule, message: string) {
+async function sendEmailAlert(rule: AlertRule, message: string, isRecovery: boolean = false) {
   const { sendAlertEmail } = await import('./emailService');
   
   const emailRecipients = rule.recipients.filter(r => r.includes('@'));
@@ -765,7 +768,11 @@ async function sendEmailAlert(rule: AlertRule, message: string) {
   
   console.log(`📧 [EMAIL] Enviando alerta a:`, emailRecipients);
   
-  const subject = `Alerta: ${rule.name}`;
+  // Cambiar asunto si es recuperación
+  const subject = isRecovery 
+    ? `Alerta: ${rule.name.replace('Enlace Caído', 'Enlace Recuperado')}`
+    : `Alerta: ${rule.name}`;
+  
   const success = await sendAlertEmail(emailRecipients, subject, message, rule.priority);
   
   if (success) {
