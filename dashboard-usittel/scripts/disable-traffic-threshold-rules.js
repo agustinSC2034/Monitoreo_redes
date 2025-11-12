@@ -1,51 +1,74 @@
 /**
- * Script para desactivar las reglas de umbral de tráfico (slow)
- * hasta que se confirme la capacidad real de los enlaces
+ * 🔧 Desactivar alertas de tráfico y slow
+ * Dejar SOLO las 13 alertas de DOWN (cambio de estado)
  */
 
 const { createClient } = require('@supabase/supabase-js');
+const fs = require('fs');
+const path = require('path');
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const envPath = path.join(__dirname, '..', '.env.local');
+const envContent = fs.readFileSync(envPath, 'utf8');
+const envVars = {};
+envContent.split('\n').forEach(line => {
+  const match = line.match(/^([^=]+)=(.*)$/);
+  if (match) {
+    envVars[match[1].trim()] = match[2].trim();
+  }
+});
 
-if (!supabaseUrl || !supabaseKey) {
-  console.error('❌ Falta configuración de Supabase');
-  process.exit(1);
-}
+const supabase = createClient(
+  envVars.NEXT_PUBLIC_SUPABASE_URL,
+  envVars.NEXT_PUBLIC_SUPABASE_ANON_KEY
+);
 
-const supabase = createClient(supabaseUrl, supabaseKey);
-
-async function disableTrafficThresholdRules() {
-  console.log('🔄 Desactivando reglas de umbral de tráfico...\n');
+async function disableTrafficAlerts() {
+  console.log('🔧 Desactivando alertas de tráfico y slow...\n');
   
-  // Reglas a desactivar
-  const rulesToDisable = [
-    { sensor_id: '13684', name: 'IPLAN ARSAT > 1000 Mbit/s' },
-    { sensor_id: '13682', name: 'CABASE > 8000 Mbit/s' }
-  ];
+  // Desactivar traffic_spike, traffic_drop, slow
+  const { data, error } = await supabase
+    .from('alert_rules')
+    .update({ enabled: false })
+    .in('condition', ['traffic_spike', 'traffic_drop', 'slow'])
+    .select();
   
-  for (const rule of rulesToDisable) {
-    console.log(`⏸️  Desactivando: ${rule.name} (sensor ${rule.sensor_id})`);
-    
-    const { data, error } = await supabase
-      .from('alert_rules')
-      .update({ enabled: false })
-      .eq('sensor_id', rule.sensor_id)
-      .eq('condition', 'slow')
-      .select();
-    
-    if (error) {
-      console.error(`   ❌ Error:`, error.message);
-    } else if (data && data.length > 0) {
-      console.log(`   ✅ Desactivada (ID: ${data[0].id})`);
-    } else {
-      console.log(`   ⚠️  No se encontró la regla`);
-    }
+  if (error) {
+    console.error('❌ Error:', error);
+    return;
   }
   
-  console.log('\n✅ Proceso completado');
-  console.log('📝 Nota: Las reglas siguen en la BD pero están desactivadas');
-  console.log('💡 Para reactivarlas, cambiar enabled=true cuando se confirme la capacidad');
+  console.log(`✅ ${data.length} reglas desactivadas:\n`);
+  data.forEach(rule => {
+    console.log(`  [${rule.id}] ${rule.name} (${rule.condition})`);
+  });
+  
+  // Verificar estado final
+  console.log('\n\n📊 Estado final de reglas activas:\n');
+  
+  const { data: activeRules, error: activeError } = await supabase
+    .from('alert_rules')
+    .select('*')
+    .eq('enabled', true)
+    .order('id', { ascending: true });
+  
+  if (activeError) {
+    console.error('❌ Error:', activeError);
+    return;
+  }
+  
+  console.log(`✅ Total de reglas activas: ${activeRules.length}`);
+  console.log('\nReglas activas:');
+  activeRules.forEach(rule => {
+    console.log(`  [${rule.id}] ${rule.name} (sensor ${rule.sensor_id}) - ${rule.condition}`);
+  });
+  
+  // Agrupar por ubicación
+  const tandil = activeRules.filter(r => ['13682', '13684', '13683', '2137', '13673'].includes(r.sensor_id));
+  const matanza = activeRules.filter(r => ['5187', '4736', '4737', '5159', '3942', '6689', '4665', '4642'].includes(r.sensor_id));
+  
+  console.log(`\n📍 TANDIL (USITTEL): ${tandil.length} sensores`);
+  console.log(`📍 LA MATANZA (LARANET): ${matanza.length} sensores`);
+  console.log(`📊 TOTAL: ${activeRules.length} alertas de DOWN activas`);
 }
 
-disableTrafficThresholdRules();
+disableTrafficAlerts().catch(console.error);
