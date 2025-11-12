@@ -165,7 +165,7 @@ export default function AlertasConfigPage() {
             Canales:
           </span>
           <p className={theme === 'light' ? 'text-gray-600' : 'text-gray-400'}>
-            {Array.isArray(rule.channels) ? rule.channels.filter(c => c === 'email').join(', ') : 'email'}
+            {Array.isArray(rule.channels) ? rule.channels.join(', ') : 'email'}
           </p>
         </div>
 
