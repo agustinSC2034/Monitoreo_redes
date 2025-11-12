@@ -22,6 +22,7 @@ import {
 } from './db';
 import { sendAlertEmail } from './emailService';
 import { sendWhatsAppAlert } from './whatsappService';
+import { sendTelegramAlert } from './telegramService';
 
 // Mapa para trackear último estado conocido de cada sensor
 const lastKnownStates = new Map<string, {
@@ -647,6 +648,18 @@ async function triggerAlert(rule: AlertRule, sensor: SensorHistory, change: Stat
           case 'whatsapp':
             await sendWhatsAppAlertInternal(rule, sensor, message);
             channelResults.push({ channel: 'whatsapp', success: true });
+            break;
+          
+          case 'telegram':
+            const telegramSuccess = await sendTelegramAlert({
+              sensorName: sensor.sensor_name,
+              status: sensor.status,
+              message,
+              location: sensor.sensor_id.startsWith('4') || sensor.sensor_id.startsWith('5') || sensor.sensor_id.startsWith('3') || sensor.sensor_id.startsWith('6') 
+                ? 'LARANET LA MATANZA' 
+                : 'USITTEL TANDIL'
+            });
+            channelResults.push({ channel: 'telegram', success: telegramSuccess });
             break;
           
           default:
