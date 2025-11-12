@@ -107,15 +107,21 @@ export default function AlertasPage() {
   });
 
   const getStatusIndicator = (status: string) => {
-    if (status.toLowerCase().includes('down')) return '●';
+    if (status.toLowerCase().includes('down') || status.toLowerCase().includes('falla')) return '●';
     if (status.toLowerCase().includes('warning')) return '▲';
-    return '✓';
+    return '●'; // Cambiar checkmark por círculo
   };
 
   const getStatusColor = (status: string) => {
-    if (status.toLowerCase().includes('down')) return 'text-red-500';
+    if (status.toLowerCase().includes('down') || status.toLowerCase().includes('falla')) return 'text-red-500';
     if (status.toLowerCase().includes('warning')) return 'text-yellow-500';
     return 'text-green-500';
+  };
+
+  // Color del círculo de ubicación (intercambiado: LARANET=azul, USITTEL=verde)
+  const getLocationColor = (sensorId: string) => {
+    const location = getSensorLocation(sensorId);
+    return location === 'matanza' ? 'text-blue-500' : 'text-green-500'; // LARANET=azul, USITTEL=verde
   };
 
   return (
@@ -369,9 +375,9 @@ export default function AlertasPage() {
                 }`}
               >
                 <div className="flex items-start gap-4">
-                  {/* Indicador */}
-                  <div className={`text-xl mt-0.5 ${getStatusColor(alert.status)}`}>
-                    {getStatusIndicator(alert.status)}
+                  {/* Indicador de Ubicación */}
+                  <div className={`text-xl mt-0.5 ${getLocationColor(alert.sensor_id)}`}>
+                    ●
                   </div>
 
                   {/* Contenido */}
@@ -449,7 +455,11 @@ export default function AlertasPage() {
                       <div className={`text-xs ${
                         theme === 'light' ? 'text-gray-600' : 'text-gray-400'
                       }`}>
-                        Estado: <span className={getStatusColor(alert.status)}>{alert.status}</span>
+                        Estado: <span className={
+                          alert.status.toLowerCase().includes('falla') || alert.status.toLowerCase().includes('down')
+                            ? 'text-red-600 font-medium'
+                            : 'text-green-600'
+                        }>{alert.status}</span>
                       </div>
                       
                       <div className={`text-xs ${
