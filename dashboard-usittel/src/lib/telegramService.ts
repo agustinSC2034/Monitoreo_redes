@@ -44,29 +44,37 @@ export async function sendTelegramAlert(options: TelegramAlertOptions): Promise<
       return false;
     }
 
-    // Determinar emoji según el estado
-    let emoji = '⚠️';
-    let statusText = options.status;
+    // Determinar emoji principal según el estado
+    let headerEmoji = '⚠';
     
     if (options.status.toLowerCase().includes('disponible') || 
         options.status.toLowerCase().includes('up')) {
-      emoji = '✅';
-      statusText = 'Recuperado';
+      headerEmoji = '✅';
     } else if (options.status.toLowerCase().includes('falla') || 
                options.status.toLowerCase().includes('down')) {
-      emoji = '🔴';
-      statusText = 'CAÍDO';
+      headerEmoji = '🔴';
     }
 
-    // Formatear mensaje para Telegram
+    // Limpiar el mensaje: quitar emojis de ubicación y dejar solo texto
+    let cleanMessage = options.message
+      .replace(/🔵\s*/g, '')  // Quitar emoji azul
+      .replace(/🟢\s*/g, ''); // Quitar emoji verde
+
+    // Reemplazar Falla y Disponible con sus emojis
+    cleanMessage = cleanMessage
+      .replace(/→ Falla\b/g, '→ Falla ❌')
+      .replace(/\bFalla →/g, 'Falla ❌ →')
+      .replace(/→ Disponible\b/g, '→ Disponible ✅')
+      .replace(/\bDisponible →/g, 'Disponible ✅ →');
+
+    // Formatear mensaje para Telegram (sin repetir ESTADO en el encabezado)
     const telegramMessage = `
-${emoji} *ALERTA DE MONITOREO*
+${headerEmoji} *ALERTA DE MONITOREO*
 
-🔸 *Sensor:* ${options.sensorName}
-📍 *Ubicación:* ${options.location}
-📊 *Estado:* ${statusText}
+*Sensor:* ${options.sensorName}
+*Ubicación:* ${options.location}
 
-${options.message}
+${cleanMessage}
 
 _Sistema de Monitoreo ITTEL_
 `.trim();
