@@ -34,7 +34,7 @@ jobs:
       - name: 🤖 Ejecutar chequeo de alertas
         working-directory: dashboard-usittel
         env:
-          VERCEL_PRODUCTION_URL: monitoreo-redes-5krk3eh9r-agustins-projects-03ad7204.vercel.app
+          VERCEL_PRODUCTION_URL: monitoreo-redes.vercel.app
         run: node scripts/check-alerts-cron.js
       
       - name: ✅ Chequeo completado
