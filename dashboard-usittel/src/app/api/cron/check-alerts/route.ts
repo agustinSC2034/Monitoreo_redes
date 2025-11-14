@@ -50,8 +50,13 @@ export async function GET(request: NextRequest) {
       try {
         const sensor = await prtgClient.getSensor(parseInt(sensorId));
         
+        // Log detallado antes de procesar
+        console.log(`🔍 [CRON] Procesando sensor ${sensorId} (${sensor.name}): ${sensor.lastvalue}`);
+        
         // Procesar el sensor (esto dispara alertas si es necesario)
         await processSensorData(sensor);
+        
+        console.log(`✅ [CRON] Sensor ${sensorId} procesado correctamente`);
         
         results.push({
           sensor_id: sensorId,
@@ -61,8 +66,6 @@ export async function GET(request: NextRequest) {
           checked: true,
           timestamp: new Date().toISOString()
         });
-        
-        console.log(`✅ [CRON] ${sensor.name}: ${sensor.status} - ${sensor.lastvalue}`);
         
       } catch (error) {
         console.error(`❌ [CRON] Error con sensor ${sensorId}:`, error);
