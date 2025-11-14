@@ -22,7 +22,9 @@ const https = require('https');
 const VERCEL_URL = process.env.VERCEL_PRODUCTION_URL || 'monitoreo-redes-ji23nj2cy-agustins-projects-03ad7204.vercel.app';
 
 async function callVercelEndpoint(location) {
-  const ENDPOINT = `/api/cron/check-alerts?location=${location}`;
+  // Agregar timestamp para evitar caché de Vercel
+  const nocache = Date.now();
+  const ENDPOINT = `/api/cron/check-alerts?location=${location}&_t=${nocache}`;
   
   return new Promise((resolve, reject) => {
     const options = {
