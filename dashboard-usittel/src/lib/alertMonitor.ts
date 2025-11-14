@@ -539,7 +539,11 @@ async function checkAndTriggerAlerts(sensor: SensorHistory, change: StatusChange
     if (shouldTrigger) {
       console.log(`🚨 Disparando alerta: ${rule.name}`);
       await triggerAlert(rule, sensor, change);
-      lastAlertTimes.set(cooldownKey, now);
+      
+      // 🧪 Solo guardar en lastAlertTimes si hay cooldown > 0
+      if (rule.cooldown > 0) {
+        lastAlertTimes.set(cooldownKey, now);
+      }
       
       // 🆕 Guardar el estado por el cual se alertó (para reglas down solamente)
       if (['down'].includes(rule.condition)) {
