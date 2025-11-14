@@ -389,22 +389,25 @@ async function checkThresholdAlerts(sensor: SensorHistory) {
     // Skip si la regla no tiene ID (no debería pasar)
     if (!rule.id) continue;
     
-    // 🆕 Verificar si el estado cambió desde la última alerta (consultar BD)
-    const stateKey = `${rule.id}_${sensor.sensor_id}`;
-    const lastAlertedStatus = lastAlertedStates.get(stateKey);
-    
-    // Si ya lo tenemos en memoria y es el mismo estado, skip
-    if (lastAlertedStatus === sensor.status) {
-      continue;
-    }
-    
-    // 🆕 Si no está en memoria, consultar la BD
-    if (!lastAlertedStatus) {
-      const lastAlert = await getLastAlertForRule(rule.id, sensor.sensor_id);
-      if (lastAlert && lastAlert.status === sensor.status) {
-        // Guardar en memoria para próximas verificaciones
-        lastAlertedStates.set(stateKey, sensor.status);
+    // 🆕 Verificar si el estado cambió desde la última alerta (SOLO PARA REGLAS DOWN)
+    // Las reglas 'slow' (umbral de tráfico) no deben bloquearse por estado, solo por cooldown
+    if (rule.condition === 'down') {
+      const stateKey = `${rule.id}_${sensor.sensor_id}`;
+      const lastAlertedStatus = lastAlertedStates.get(stateKey);
+      
+      // Si ya lo tenemos en memoria y es el mismo estado, skip
+      if (lastAlertedStatus === sensor.status) {
         continue;
+      }
+      
+      // 🆕 Si no está en memoria, consultar la BD
+      if (!lastAlertedStatus) {
+        const lastAlert = await getLastAlertForRule(rule.id, sensor.sensor_id);
+        if (lastAlert && lastAlert.status === sensor.status) {
+          // Guardar en memoria para próximas verificaciones
+          lastAlertedStates.set(stateKey, sensor.status);
+          continue;
+        }
       }
     }
     
@@ -413,8 +416,15 @@ async function checkThresholdAlerts(sensor: SensorHistory) {
     const lastAlertTime = lastAlertTimes.get(cooldownKey);
     const now = Math.floor(Date.now() / 1000);
     
-    if (lastAlertTime && (now - lastAlertTime) < rule.cooldown) {
+    const shouldCheckCooldown = rule.cooldown > 0;
+    
+    if (shouldCheckCooldown && lastAlertTime && (now - lastAlertTime) < rule.cooldown) {
+      console.log(`⏳ Cooldown activo para regla "${rule.name}"`);
       continue;
+    }
+    
+    if (!shouldCheckCooldown) {
+      console.log(`🧪 [TEST] Regla "${rule.name}" con cooldown=0, se evaluará siempre`);
     }
     
     // Verificar condición
@@ -423,9 +433,17 @@ async function checkThresholdAlerts(sensor: SensorHistory) {
     if (shouldTrigger) {
       console.log(`🚨 Condición detectada: ${rule.name} (estado: ${sensor.status})`);
       await triggerAlert(rule, sensor, dummyChange);
-      lastAlertTimes.set(cooldownKey, now);
-      // 🆕 Guardar el estado por el cual se alertó
-      lastAlertedStates.set(stateKey, sensor.status);
+      
+      // 🧪 Solo guardar en lastAlertTimes si hay cooldown > 0
+      if (rule.cooldown > 0) {
+        lastAlertTimes.set(cooldownKey, now);
+      }
+      
+      // 🆕 Guardar el estado por el cual se alertó (SOLO PARA REGLAS DOWN)
+      if (rule.condition === 'down') {
+        const stateKey = `${rule.id}_${sensor.sensor_id}`;
+        lastAlertedStates.set(stateKey, sensor.status);
+      }
     }
   }
 }
