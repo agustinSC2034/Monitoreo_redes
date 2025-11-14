@@ -11,7 +11,7 @@
       "headers": [
         {
           "key": "Cache-Control",
-          "value": "s-maxage=30, stale-while-revalidate"
+          "value": "no-store, no-cache, must-revalidate"
         }
       ]
     }
