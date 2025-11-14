@@ -389,14 +389,19 @@ async function checkThresholdAlerts(sensor: SensorHistory) {
     // Skip si la regla no tiene ID (no debería pasar)
     if (!rule.id) continue;
     
+    // 🆕 DEBUG: Log de tipo de regla
+    console.log(`🔍 [DEBUG] Evaluando regla ID ${rule.id} "${rule.name}" - Condición: ${rule.condition}`);
+    
     // 🆕 Verificar si el estado cambió desde la última alerta (SOLO PARA REGLAS DOWN)
     // Las reglas 'slow' (umbral de tráfico) no deben bloquearse por estado, solo por cooldown
     if (rule.condition === 'down') {
+      console.log(`  ↳ Regla tipo DOWN - Verificando estado en BD...`);
       const stateKey = `${rule.id}_${sensor.sensor_id}`;
       const lastAlertedStatus = lastAlertedStates.get(stateKey);
       
       // Si ya lo tenemos en memoria y es el mismo estado, skip
       if (lastAlertedStatus === sensor.status) {
+        console.log(`  ↳ Estado en memoria coincide: ${lastAlertedStatus} - SKIP`);
         continue;
       }
       
@@ -404,11 +409,14 @@ async function checkThresholdAlerts(sensor: SensorHistory) {
       if (!lastAlertedStatus) {
         const lastAlert = await getLastAlertForRule(rule.id, sensor.sensor_id);
         if (lastAlert && lastAlert.status === sensor.status) {
+          console.log(`  ↳ Estado en BD coincide: ${lastAlert.status} - SKIP`);
           // Guardar en memoria para próximas verificaciones
           lastAlertedStates.set(stateKey, sensor.status);
           continue;
         }
       }
+    } else {
+      console.log(`  ↳ Regla tipo ${rule.condition.toUpperCase()} - NO verifica estado, solo cooldown`);
     }
     
     // Verificar cooldown
