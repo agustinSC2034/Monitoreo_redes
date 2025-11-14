@@ -77,7 +77,8 @@ export async function GET(request: NextRequest) {
     const duration = Date.now() - startTime;
     console.log(`✅ [CRON] Chequeo completado para ${location.toUpperCase()} en ${duration}ms`);
     
-    return NextResponse.json({
+    // Crear respuesta con headers anti-caché explícitos
+    const response = NextResponse.json({
       success: true,
       location: location,
       message: `Chequeo de alertas completado para ${location.toUpperCase()}`,
@@ -86,6 +87,13 @@ export async function GET(request: NextRequest) {
       results,
       note: 'Este endpoint debe ser llamado periódicamente por un servicio externo de cron'
     });
+    
+    // Headers para prevenir cualquier tipo de caché
+    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+    response.headers.set('Pragma', 'no-cache');
+    response.headers.set('Expires', '0');
+    
+    return response;
     
   } catch (error) {
     console.error('❌ [CRON] Error general:', error);
