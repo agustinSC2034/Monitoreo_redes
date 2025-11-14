@@ -46,17 +46,28 @@ export async function GET(request: NextRequest) {
     
     const results = [];
     
-    for (const sensorId of sensorIds) {
+    // Helper para delay entre sensores (evitar rate limiting)
+    const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+    
+    for (let i = 0; i < sensorIds.length; i++) {
+      const sensorId = sensorIds[i];
+      
       try {
+        // Delay de 500ms entre sensores para evitar HTTP 429
+        if (i > 0) {
+          await delay(500);
+        }
+        
+        console.log(`🔍 [CRON] Consultando sensor ${sensorId}...`);
         const sensor = await prtgClient.getSensor(parseInt(sensorId));
         
-        // Log detallado antes de procesar
-        console.log(`🔍 [CRON] Procesando sensor ${sensorId} (${sensor.name}): ${sensor.lastvalue}`);
+        console.log(`📊 [CRON] Sensor ${sensorId} (${sensor.name}): ${sensor.status} - ${sensor.lastvalue}`);
         
         // Procesar el sensor (esto dispara alertas si es necesario)
+        console.log(`⚙️ [CRON] Procesando alertas para sensor ${sensorId}...`);
         await processSensorData(sensor);
         
-        console.log(`✅ [CRON] Sensor ${sensorId} procesado correctamente`);
+        console.log(`✅ [CRON] Sensor ${sensorId} completado`);
         
         results.push({
           sensor_id: sensorId,
@@ -68,11 +79,19 @@ export async function GET(request: NextRequest) {
         });
         
       } catch (error) {
-        console.error(`❌ [CRON] Error con sensor ${sensorId}:`, error);
+        const errorMsg = error instanceof Error ? error.message : 'Error desconocido';
+        console.error(`❌ [CRON] Error con sensor ${sensorId}:`, errorMsg);
+        
+        // Si es error 429, pausar más tiempo
+        if (errorMsg.includes('429')) {
+          console.warn(`⏸️ [CRON] Rate limit detectado, pausando 2 segundos...`);
+          await delay(2000);
+        }
+        
         results.push({
           sensor_id: sensorId,
           checked: false,
-          error: error instanceof Error ? error.message : 'Error desconocido'
+          error: errorMsg
         });
       }
     }
