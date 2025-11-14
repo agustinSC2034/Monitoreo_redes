@@ -520,9 +520,17 @@ async function checkAndTriggerAlerts(sensor: SensorHistory, change: StatusChange
     const lastAlertTime = lastAlertTimes.get(cooldownKey);
     const now = Math.floor(Date.now() / 1000);
     
-    if (lastAlertTime && (now - lastAlertTime) < rule.cooldown) {
+    // 🧪 BYPASS: Ignorar cooldown si la regla tiene cooldown=0 (para testing)
+    const shouldCheckCooldown = rule.cooldown > 0;
+    
+    if (shouldCheckCooldown && lastAlertTime && (now - lastAlertTime) < rule.cooldown) {
       console.log(`⏳ Cooldown activo para regla "${rule.name}" (${rule.cooldown - (now - lastAlertTime)}s restantes)`);
       continue;
+    }
+    
+    // Log para debugging
+    if (!shouldCheckCooldown) {
+      console.log(`🧪 [TEST] Regla "${rule.name}" con cooldown=0, se evaluará siempre`);
     }
     
     // Verificar condición
