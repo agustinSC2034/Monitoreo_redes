@@ -292,13 +292,6 @@ async function detectStatusChange(current: SensorHistory) {
         
         // Guardar el cambio de estado para no alertar de nuevo
         await saveStatusChange(recoveryChange);
-        
-        // Limpiar los estados alertados
-        const rules = await getAlertRuleBySensor(sensorId);
-        for (const rule of rules) {
-          const stateKey = `${rule.id}_${sensorId}`;
-          lastAlertedStates.delete(stateKey);
-        }
       }
     }
     
