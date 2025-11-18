@@ -7,8 +7,6 @@
 
 import { useEffect, useState } from 'react';
 
-import Link from 'next/link';
-
 interface Alert {
   id: number;
   rule_id: number;
@@ -142,24 +140,11 @@ export default function AlertasPage() {
             ← Volver al Dashboard
           </Link>
           
-          <div className="flex items-center justify-between mb-2">
-            <h1 className={`text-2xl font-light ${
-              theme === 'light' ? 'text-gray-900' : 'text-white'
-            }`}>
-              Historial de Alertas
-            </h1>
-            
-            <Link
-              href="/dashboard/alertas/configuracion"
-              className={`px-4 py-2 rounded-md border text-sm transition-all duration-200 hover:scale-105 ${
-                theme === 'light'
-                  ? 'bg-white border-gray-300 text-gray-700 hover:bg-gray-100 hover:border-gray-400'
-                  : 'bg-gray-800 border-gray-600 text-gray-300 hover:bg-gray-750 hover:border-gray-500'
-              }`}
-            >
-              Configuración
-            </Link>
-          </div>
+          <h1 className={`text-2xl font-light mb-2 ${
+            theme === 'light' ? 'text-gray-900' : 'text-white'
+          }`}>
+            Historial de Alertas
+          </h1>
           
           <p className={`text-sm ${
             theme === 'light' ? 'text-gray-600' : 'text-gray-400'
