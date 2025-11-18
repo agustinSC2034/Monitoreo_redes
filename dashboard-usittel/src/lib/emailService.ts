@@ -40,7 +40,9 @@ export async function sendAlertEmail(
   recipients: string[],
   subject: string,
   message: string,
-  priority: 'low' | 'medium' | 'high' | 'critical' = 'medium'
+  priority: 'low' | 'medium' | 'high' | 'critical' = 'medium',
+  sensorId?: string,
+  location?: string
 ): Promise<boolean> {
   
   // Validar que haya configuración
@@ -61,7 +63,7 @@ export async function sendAlertEmail(
     const transport = getTransporter();
     
     // Preparar email HTML
-    const htmlContent = generateEmailHTML(subject, message, priority);
+    const htmlContent = generateEmailHTML(subject, message, priority, sensorId, location);
     
     // Configurar prioridad del email
     const priorityHeaders: any = {};
@@ -106,7 +108,13 @@ export async function sendAlertEmail(
 /**
  * 🎨 Generar HTML del email (Diseño Minimalista)
  */
-function generateEmailHTML(subject: string, message: string, priority: string): string {
+function generateEmailHTML(
+  subject: string, 
+  message: string, 
+  priority: string,
+  sensorId?: string,
+  location?: string
+): string {
   const priorityColor = {
     low: '#3b82f6',      // Azul
     medium: '#f59e0b',   // Amarillo
@@ -123,6 +131,11 @@ function generateEmailHTML(subject: string, message: string, priority: string): 
   
   // Convertir saltos de línea a <br>
   const formattedMessage = message.replace(/\n/g, '<br>');
+  
+  // URL del gráfico (si hay sensorId)
+  const chartUrl = sensorId && location 
+    ? `https://monitoreo-redes.vercel.app/api/chart-proxy?id=${sensorId}&location=${location}&_=${Date.now()}`
+    : null;
   
   return `
 <!DOCTYPE html>
@@ -161,6 +174,20 @@ function generateEmailHTML(subject: string, message: string, priority: string): 
         </div>
       </td>
     </tr>
+    
+    ${chartUrl ? `
+    <!-- Chart Image -->
+    <tr>
+      <td style="padding: 0 0 20px 0;">
+        <div style="border: 1px solid #e5e7eb; border-radius: 4px; overflow: hidden;">
+          <img src="${chartUrl}" alt="Gr\u00e1fico del sensor" style="width: 100%; height: auto; display: block;" />
+        </div>
+        <div style="font-size: 11px; color: #9ca3af; margin-top: 5px;">
+          Gr\u00e1fico de tr\u00e1fico - Últimas 2 horas
+        </div>
+      </td>
+    </tr>
+    ` : ''}
     
     <!-- Footer -->
     <tr>

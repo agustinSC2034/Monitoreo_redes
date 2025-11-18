@@ -136,8 +136,9 @@ export async function processSensorData(sensor: any) {
     // Guardar en historial
     await saveSensorHistory(historyData);
     
-    // 🚨 NUEVO: Revisar historial PRTG para detectar bajones intermedios
-    await checkHistoricalDowntime(historyData);
+    // ⚠️ DESHABILITADO: Revisión de historial PRTG (complejidad innecesaria)
+    // Solo chequeamos el estado actual, sin revisar historial
+    // await checkHistoricalDowntime(historyData);
     
     // Detectar cambio de estado
     await detectStatusChange(historyData);
@@ -678,7 +679,7 @@ async function triggerAlert(rule: AlertRule, sensor: SensorHistory, change: Stat
       try {
         switch (channel) {
           case 'email':
-            await sendEmailAlert(rule, message, isRecovery);
+            await sendEmailAlert(rule, message, sensor, isRecovery);
             channelResults.push({ channel: 'email', success: true });
             break;
           
@@ -750,7 +751,7 @@ async function triggerAlert(rule: AlertRule, sensor: SensorHistory, change: Stat
 }
 
 /**
- * 📝 Formatear mensaje de alerta (Minimalista)
+ * 📝 Formatear mensaje de alerta (Profesional y sin emojis)
  */
 function formatAlertMessage(rule: AlertRule, sensor: SensorHistory, change: StatusChange): string {
   // sensor.timestamp es Unix timestamp en UTC (segundos)
@@ -762,46 +763,42 @@ function formatAlertMessage(rule: AlertRule, sensor: SensorHistory, change: Stat
     hour: '2-digit',
     minute: '2-digit',
     second: '2-digit',
-    hour12: false, // Formato 24 horas para evitar confusión AM/PM
+    hour12: false,
     timeZone: 'America/Argentina/Buenos_Aires'
   });
   
-  // Determinar ubicación según el sensor
+  // Determinar ubicación según el sensor (SIN EMOJIS)
   const location = sensor.sensor_name.includes('(063)') || sensor.sensor_name.includes('CABASE') || 
                    sensor.sensor_name.includes('IPLAN') || sensor.sensor_name.includes('TECO') ||
                    sensor.sensor_name.includes('RDA') || sensor.sensor_name.includes('DTV')
-    ? '🔵 USITTEL TANDIL'
-    : '🟢 LARANET LA MATANZA';
+    ? 'USITTEL TANDIL'
+    : 'LARANET LA MATANZA';
   
-  let message = `${location}\n\n`;
+  let message = `UBICACION: ${location}\n\n`;
   message += `SENSOR: ${sensor.sensor_name}\n`;
   
   if (rule.condition === 'slow' && rule.threshold) {
     // Alerta de umbral
-    message += `CONDICIÓN: Tráfico > ${rule.threshold} Mbit/s\n`;
+    message += `TIPO: Umbral de tráfico superado\n`;
+    message += `UMBRAL: ${rule.threshold} Mbit/s\n`;
     message += `VALOR ACTUAL: ${sensor.lastvalue || 'N/A'}\n`;
   } else if (rule.condition === 'traffic_spike' || rule.condition === 'traffic_drop') {
     // Alerta de cambio drástico
-    const changeType = rule.condition === 'traffic_spike' ? 'AUMENTO DRÁSTICO' : 'CAÍDA DRÁSTICA';
-    message += `CONDICIÓN: ${changeType} de tráfico\n`;
+    const changeType = rule.condition === 'traffic_spike' ? 'AUMENTO DRASTICO' : 'CAIDA DRASTICA';
+    message += `TIPO: ${changeType} de tráfico\n`;
     message += `ANTERIOR: ${change.old_status}\n`;
     message += `ACTUAL: ${change.new_status}\n`;
   } else {
     // Alerta de cambio de estado (DOWN, WARNING, etc)
-    message += `CONDICIÓN: Cambio de estado\n`;
-    message += `ESTADO: ${change.old_status} → ${sensor.status}\n`;
+    message += `TIPO: Cambio de estado\n`;
+    message += `ESTADO: ${change.old_status} -> ${sensor.status}\n`;
     if (change.duration) {
       const minutes = Math.floor(change.duration / 60);
-      message += `DURACIÓN ANTERIOR: ${minutes} min\n`;
+      message += `DURACION ESTADO ANTERIOR: ${minutes} min\n`;
     }
   }
   
-  message += `TIMESTAMP: ${timestamp}\n`;
-  
-  // ❌ Eliminado: No mostrar detalles técnicos de PRTG
-  // if (sensor.message && !sensor.message.includes('<div')) {
-  //   message += `\nDETALLES:\n${sensor.message}`;
-  // }
+  message += `FECHA/HORA: ${timestamp}\n`;
   
   return message;
 }
@@ -809,7 +806,7 @@ function formatAlertMessage(rule: AlertRule, sensor: SensorHistory, change: Stat
 /**
  * 📧 Enviar alerta por email (REAL)
  */
-async function sendEmailAlert(rule: AlertRule, message: string, isRecovery: boolean = false) {
+async function sendEmailAlert(rule: AlertRule, message: string, sensor: SensorHistory, isRecovery: boolean = false) {
   const { sendAlertEmail } = await import('./emailService');
   
   const emailRecipients = rule.recipients.filter(r => r.includes('@'));
@@ -826,7 +823,20 @@ async function sendEmailAlert(rule: AlertRule, message: string, isRecovery: bool
     ? `Alerta: ${rule.name.replace('Enlace Caído', 'Enlace Recuperado')}`
     : `Alerta: ${rule.name}`;
   
-  const success = await sendAlertEmail(emailRecipients, subject, message, rule.priority);
+  // Determinar location según sensor_id
+  const location = sensor.sensor_id.startsWith('4') || sensor.sensor_id.startsWith('5') || 
+                   sensor.sensor_id.startsWith('3') || sensor.sensor_id.startsWith('6')
+    ? 'matanza' 
+    : 'tandil';
+  
+  const success = await sendAlertEmail(
+    emailRecipients, 
+    subject, 
+    message, 
+    rule.priority,
+    sensor.sensor_id,
+    location
+  );
   
   if (success) {
     console.log('✅ Email enviado exitosamente');

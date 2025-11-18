@@ -44,44 +44,21 @@ export async function sendTelegramAlert(options: TelegramAlertOptions): Promise<
       return false;
     }
 
-    // Determinar emoji principal según el estado
-    let headerEmoji = '⚠';
-    
-    if (options.status.toLowerCase().includes('disponible') || 
-        options.status.toLowerCase().includes('up')) {
-      headerEmoji = '✅';
-    } else if (options.status.toLowerCase().includes('falla') || 
-               options.status.toLowerCase().includes('down')) {
-      headerEmoji = '🔴';
-    }
-
-    // Limpiar el mensaje: quitar emojis de ubicación y dejar solo texto
-    let cleanMessage = options.message
-      .replace(/🔵\s*/g, '')  // Quitar emoji azul
-      .replace(/🟢\s*/g, ''); // Quitar emoji verde
-
-    // Reemplazar Falla y Disponible con sus emojis
-    cleanMessage = cleanMessage
-      .replace(/→ Falla\b/g, '→ Falla ❌')
-      .replace(/\bFalla →/g, 'Falla ❌ →')
-      .replace(/→ Disponible\b/g, '→ Disponible ✅')
-      .replace(/\bDisponible →/g, 'Disponible ✅ →');
-
-    // Formatear mensaje para Telegram (sin repetir ESTADO en el encabezado)
+    // Mensaje simple y profesional (SIN EMOJIS)
     const telegramMessage = `
-${headerEmoji} *ALERTA DE MONITOREO*
+ALERTA DE MONITOREO
 
-*Sensor:* ${options.sensorName}
-*Ubicación:* ${options.location}
+Sensor: ${options.sensorName}
+Ubicacion: ${options.location}
+Estado: ${options.status}
 
-${cleanMessage}
+${options.message}
 
-_Sistema de Monitoreo ITTEL_
+Sistema de Monitoreo ITTEL
 `.trim();
 
-    // Enviar mensaje
+    // Enviar mensaje SIN formato markdown para evitar problemas
     await telegramBot.sendMessage(TELEGRAM_CHAT_ID, telegramMessage, {
-      parse_mode: 'Markdown',
       disable_web_page_preview: true,
     });
 

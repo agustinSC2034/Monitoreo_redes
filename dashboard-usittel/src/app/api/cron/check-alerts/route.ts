@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
     // Sensores a monitorear según ubicación
     const sensorIds = location === 'matanza' 
       ? ['5187', '4736', '4737', '5159', '3942', '6689', '4665', '4642'] // IDs de LARANET
-      : ['13682', '13684', '13683', '2137', '13673']; // IDs de Tandil
+      : ['13682', '13684', '13683', '2137', '13673', '13726']; // IDs de Tandil + WAN-to-RDB
     
     const results = [];
     
