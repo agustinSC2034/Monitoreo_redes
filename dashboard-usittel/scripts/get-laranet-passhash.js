@@ -8,7 +8,7 @@
 const https = require('https');
 const http = require('http');
 
-const baseUrl = 'http://38.159.225.250:8090';
+const baseUrl = 'http://stats.reditel.com.ar:8995';
 const username = 'nocittel';
 const password = '1ttel20203T#';
 
@@ -66,7 +66,7 @@ getPasshash()
     console.error('❌ Error:', error.message);
     console.log('');
     console.log('💡 Alternativa: Obtener el passhash manualmente');
-    console.log('   1. Ingresa a http://38.159.225.250:8090');
+    console.log('   1. Ingresa a http://stats.reditel.com.ar:8995');
     console.log('   2. Login con nocittel / 1ttel20203T#');
     console.log('   3. Ve a: Setup > My Account > My Account');
     console.log('   4. Busca el campo "Passhash" y cópialo');
