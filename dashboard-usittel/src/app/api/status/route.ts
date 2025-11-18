@@ -17,7 +17,6 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { processSensorData } from '@/lib/alertMonitor';
 import { getPRTGClient, type PRTGLocation } from '@/lib/prtgClient';
 
 // Esta función se ejecuta cuando alguien hace GET a /api/status
@@ -35,15 +34,9 @@ export async function GET(request: NextRequest) {
     // 2️⃣ Llamar al cliente PRTG para obtener sensores críticos
     const sensorsData = await prtgClient.getCriticalSensors();
     
-    // 2️⃣ Procesar cada sensor: guardar historial y detectar cambios
-    for (const sensor of sensorsData) {
-      await processSensorData(sensor);
-    }
-    
-    // 2️⃣ Procesar cada sensor: guardar historial y detectar cambios
-    for (const sensor of sensorsData) {
-      await processSensorData(sensor);
-    }
+    // ⚠️ NO PROCESAR SENSORES AQUÍ - Solo el endpoint /api/cron/check-alerts debe disparar alertas
+    // Este endpoint es solo para obtener el estado actual y mostrarlo en el dashboard
+    // await processSensorData(sensor); // DESHABILITADO
     
     // 3️⃣ Procesar los datos para que sean más fáciles de usar en el frontend
     // Convertimos el formato complejo de PRTG a algo simple
