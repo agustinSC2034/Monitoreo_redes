@@ -465,7 +465,6 @@ async function checkRecoveryAlerts(sensor: SensorHistory, change: StatusChange) 
     
     await triggerAlert(rule, sensor, recoveryChange, true); // true = es recuperación
   }
-  }
 }
 
 /**
