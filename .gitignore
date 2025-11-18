@@ -15,3 +15,6 @@ SECRETS*.md
 # Archivos de configuración local
 *.local.*
 .vercel
+
+.Datos_para_conectarse_a_todo.md
+.SISTEMA_ALERTAS_COMPLETO.md

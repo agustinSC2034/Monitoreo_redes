@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
     let PRTG_BASE_URL, PRTG_USERNAME, PRTG_PASSHASH;
     
     if (location === 'matanza') {
-      PRTG_BASE_URL = process.env.PRTG_LARANET_BASE_URL || 'http://stats.reditel.com.ar:8995';
+      PRTG_BASE_URL = process.env.PRTG_LARANET_BASE_URL || 'http://38.159.225.250:8090';
       PRTG_USERNAME = process.env.PRTG_LARANET_USERNAME || 'nocittel';
       PRTG_PASSHASH = process.env.PRTG_LARANET_PASSHASH || '3903741015';
     } else {
