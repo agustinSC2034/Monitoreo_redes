@@ -772,14 +772,17 @@ function formatAlertMessage(rule: AlertRule, sensor: SensorHistory, change: Stat
     ? 'USITTEL TANDIL'
     : 'LARANET LA MATANZA';
   
-  let message = `UBICACION: ${location}\n\n`;
+  let message = `${location}\n\n`;
   message += `SENSOR: ${sensor.sensor_name}\n`;
   
   if (rule.condition === 'slow' && rule.threshold) {
-    // Alerta de umbral
-    message += `TIPO: Umbral de tráfico superado\n`;
-    message += `UMBRAL: ${rule.threshold} Mbit/s\n`;
-    message += `VALOR ACTUAL: ${sensor.lastvalue || 'N/A'}\n`;
+    // Alerta de umbral - Convertir valor actual a Mbit/s
+    const trafficValue = parseTrafficValue(sensor.lastvalue || '');
+    const trafficFormatted = trafficValue !== null ? `${trafficValue.toFixed(2)} Mbit/s` : 'N/A';
+    
+    message += `Umbral de trafico superado\n`;
+    message += `Umbral: ${rule.threshold.toFixed(2)} Mbit/s\n`;
+    message += `Valor actual: ${trafficFormatted}\n`;
   } else if (rule.condition === 'traffic_spike' || rule.condition === 'traffic_drop') {
     // Alerta de cambio drástico
     const changeType = rule.condition === 'traffic_spike' ? 'AUMENTO DRASTICO' : 'CAIDA DRASTICA';

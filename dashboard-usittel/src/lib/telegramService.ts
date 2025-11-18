@@ -49,14 +49,7 @@ export async function sendTelegramAlert(options: TelegramAlertOptions): Promise<
     const telegramMessage = `
 ALERTA DE MONITOREO
 
-Sensor: ${options.sensorName}
-Ubicacion: ${options.location}
-Estado: ${options.status}
-
-${options.message}
-
-Sistema de Monitoreo ITTEL
-`.trim();
+${options.message}`.trim();
 
     // 📊 Primero enviar la imagen del gráfico
     const chartUrl = `https://monitoreo-redes.vercel.app/api/chart-proxy?id=${options.sensorId}&location=${options.location.toLowerCase().includes('tandil') ? 'tandil' : 'lamatanza'}`;

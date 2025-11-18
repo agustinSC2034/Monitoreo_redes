@@ -32,7 +32,22 @@ export async function GET(request: NextRequest) {
     }
     
     // Construir URL del gráfico
-    const chartUrl = `${PRTG_BASE_URL}/chart.png?type=graph&graphid=0&id=${sensorId}&width=1200&height=400&username=${PRTG_USERNAME}&passhash=${PRTG_PASSHASH}`;
+    // sdate: fecha/hora de inicio (ahora - 2 horas)
+    // edate: fecha/hora de fin (ahora)
+    // Este formato muestra las últimas 2 horas con detalle, enfocándose en la parte final
+    const now = new Date();
+    const twoHoursAgo = new Date(now.getTime() - (2 * 60 * 60 * 1000));
+    
+    // Formato: YYYY-MM-DD-HH-MM-SS
+    const formatDate = (date: Date) => {
+      const pad = (n: number) => String(n).padStart(2, '0');
+      return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}-${pad(date.getHours())}-${pad(date.getMinutes())}-${pad(date.getSeconds())}`;
+    };
+    
+    const sdate = formatDate(twoHoursAgo);
+    const edate = formatDate(now);
+    
+    const chartUrl = `${PRTG_BASE_URL}/chart.png?type=graph&graphid=0&id=${sensorId}&width=1200&height=400&sdate=${sdate}&edate=${edate}&username=${PRTG_USERNAME}&passhash=${PRTG_PASSHASH}`;
     
     // Descargar imagen desde PRTG
     const response = await fetch(chartUrl, {
