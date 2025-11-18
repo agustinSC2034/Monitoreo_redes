@@ -7,12 +7,20 @@
  */
 
 const { createClient } = require('@supabase/supabase-js');
-require('dotenv').config({ path: '.env.local' });
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '..', '.env.local') });
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseKey) {
+  console.error('❌ Error: Variables de entorno no encontradas');
+  console.error('   NEXT_PUBLIC_SUPABASE_URL:', supabaseUrl ? 'OK' : 'FALTA');
+  console.error('   SUPABASE_KEY:', supabaseKey ? 'OK' : 'FALTA');
+  process.exit(1);
+}
+
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 async function restoreProductionConfig() {
   console.log('🔧 Restaurando configuración de producción...\n');
@@ -26,7 +34,7 @@ async function restoreProductionConfig() {
       .update({
         name: 'CABASE > 8500 Mbit/s',
         threshold: 8500,
-        cooldown: 300, // 5 minutos
+        cooldown: 0, // Sistema de sesiones controla duplicados
         recipients: [
           'agustin.scutari@it-tel.com.ar',
           'ja@it-tel.com.ar',
