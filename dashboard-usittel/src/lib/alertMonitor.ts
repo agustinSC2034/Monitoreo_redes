@@ -348,30 +348,6 @@ async function detectTrafficChange(
       ) {
         console.log(`⏸️ [DESACTIVADO] Alerta de cambio de tráfico: ${rule.name} (${absChange.toFixed(1)}%)`);
         continue; // Skip - alertas de tráfico desactivadas
-        
-        // TODO: Reactivar cuando se confirmen capacidades reales de enlaces
-        /*
-        // Verificar cooldown
-        const cooldownKey = `${rule.id}_${sensor.sensor_id}`;
-        const lastAlertTime = lastAlertTimes.get(cooldownKey);
-        const now = Math.floor(Date.now() / 1000);
-        
-        if (!lastAlertTime || (now - lastAlertTime) >= rule.cooldown) {
-          console.log(`🚨 Disparando alerta de cambio de tráfico: ${rule.name}`);
-          
-          // Crear cambio ficticio con información de tráfico
-          const trafficChange: StatusChange = {
-            sensor_id: sensor.sensor_id,
-            sensor_name: sensor.sensor_name,
-            old_status: `${previousTraffic.toFixed(0)} Mbit/s`,
-            new_status: `${currentTraffic.toFixed(0)} Mbit/s (${change > 0 ? '+' : ''}${change.toFixed(1)}%)`,
-            timestamp: sensor.timestamp
-          };
-          
-          await triggerAlert(rule, sensor, trafficChange);
-          lastAlertTimes.set(cooldownKey, now);
-        }
-        */
       }
     }
   }
@@ -478,15 +454,6 @@ async function checkRecoveryAlerts(sensor: SensorHistory, change: StatusChange) 
     // Solo disparar para reglas de tipo "down" que ahora se recuperaron
     if (rule.condition !== 'down') continue;
     
-    // Verificar cooldown
-    const cooldownKey = `${rule.id}_${sensor.sensor_id}`;
-    const lastAlertTime = lastAlertTimes.get(cooldownKey);
-    const now = Math.floor(Date.now() / 1000);
-    
-    if (lastAlertTime && (now - lastAlertTime) < rule.cooldown) {
-      continue;
-    }
-    
     console.log(`✅ Disparando alerta de recuperación: ${rule.name}`);
     
     // Modificar el change para indicar recuperación
@@ -497,7 +464,7 @@ async function checkRecoveryAlerts(sensor: SensorHistory, change: StatusChange) 
     };
     
     await triggerAlert(rule, sensor, recoveryChange, true); // true = es recuperación
-    lastAlertTimes.set(cooldownKey, now);
+  }
   }
 }
 
@@ -885,13 +852,6 @@ export function cleanupOldStates(maxAgeSeconds: number = 3600) {
   for (const [sensorId, state] of lastKnownStates.entries()) {
     if (state.timestamp < threshold) {
       lastKnownStates.delete(sensorId);
-    }
-  }
-  
-  // Limpiar cooldowns antiguos
-  for (const [key, timestamp] of lastAlertTimes.entries()) {
-    if (timestamp < threshold) {
-      lastAlertTimes.delete(key);
     }
   }
   
