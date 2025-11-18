@@ -25,6 +25,7 @@ interface TelegramAlertOptions {
   status: string;
   message: string;
   location: string;
+  sensorId: string;
   priority?: 'high' | 'normal';
 }
 
@@ -57,12 +58,23 @@ ${options.message}
 Sistema de Monitoreo ITTEL
 `.trim();
 
-    // Enviar mensaje SIN formato markdown para evitar problemas
-    await telegramBot.sendMessage(TELEGRAM_CHAT_ID, telegramMessage, {
-      disable_web_page_preview: true,
-    });
+    // 📊 Primero enviar la imagen del gráfico
+    const chartUrl = `https://monitoreo-redes.vercel.app/api/chart-proxy?id=${options.sensorId}&location=${options.location.toLowerCase().includes('tandil') ? 'tandil' : 'lamatanza'}`;
+    
+    try {
+      await telegramBot.sendPhoto(TELEGRAM_CHAT_ID, chartUrl, {
+        caption: telegramMessage
+      });
+      console.log(`✅ Alerta de Telegram enviada con gráfico: ${options.sensorName}`);
+    } catch (photoError) {
+      // Si falla la foto, enviar solo el mensaje de texto
+      console.warn('⚠️ No se pudo enviar la foto, enviando solo texto:', photoError);
+      await telegramBot.sendMessage(TELEGRAM_CHAT_ID, telegramMessage, {
+        disable_web_page_preview: true,
+      });
+      console.log(`✅ Alerta de Telegram enviada (sin gráfico): ${options.sensorName}`);
+    }
 
-    console.log(`✅ Alerta de Telegram enviada: ${options.sensorName}`);
     return true;
 
   } catch (error) {
