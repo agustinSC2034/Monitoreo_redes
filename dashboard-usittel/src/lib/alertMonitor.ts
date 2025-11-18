@@ -32,11 +32,10 @@ const lastKnownStates = new Map<string, {
   trafficValue?: number; // Valor de tráfico en Mbit/s
 }>();
 
-// Mapa para trackear últimas alertas enviadas (cooldown por regla)
-const lastAlertTimes = new Map<string, number>();
-
-// 🆕 Mapa para trackear el último estado por el cual se alertó (evitar alertas repetidas del mismo estado)
-const lastAlertedStates = new Map<string, string>(); // key: "ruleId_sensorId", value: "status"
+// 🔒 Sistema de control de duplicados POR SESIÓN (cada ejecución de GitHub Actions)
+// Key: "sessionId_ruleId_sensorId", Value: true si ya se alertó en esta sesión
+const alertedInSession = new Map<string, boolean>();
+let currentSessionId: string | null = null;
 
 // 🆕 Mapa para trackear últimos checks de historial (evitar duplicados)
 const lastHistoryChecks = new Map<string, number>();
@@ -44,6 +43,33 @@ const lastHistoryChecks = new Map<string, number>();
 // 🆕 Mapa para cooldown GLOBAL de WhatsApp por sensor (evitar spam de múltiples reglas)
 const lastWhatsAppBySensor = new Map<string, number>();
 const WHATSAPP_GLOBAL_COOLDOWN = 120; // 2 minutos entre notificaciones WhatsApp del mismo sensor
+
+/**
+ * 🔑 Iniciar nueva sesión de monitoreo (llamar al inicio de cada GitHub Action)
+ */
+export function startMonitoringSession(sessionId?: string) {
+  currentSessionId = sessionId || `session_${Date.now()}`;
+  console.log(`🔑 Nueva sesión de monitoreo iniciada: ${currentSessionId}`);
+  return currentSessionId;
+}
+
+/**
+ * 🔒 Verificar si ya se alertó en la sesión actual
+ */
+function hasAlertedInSession(ruleId: number, sensorId: string): boolean {
+  if (!currentSessionId) return false;
+  const key = `${currentSessionId}_${ruleId}_${sensorId}`;
+  return alertedInSession.has(key);
+}
+
+/**
+ * 🔒 Marcar que se alertó en la sesión actual
+ */
+function markAlertedInSession(ruleId: number, sensorId: string) {
+  if (!currentSessionId) return;
+  const key = `${currentSessionId}_${ruleId}_${sensorId}`;
+  alertedInSession.set(key, true);
+}
 
 /**
  * 🚨 Revisar historial PRTG para detectar bajones intermedios
@@ -369,6 +395,12 @@ async function detectTrafficChange(
  * 🎯 Verificar alertas de umbral (sin cambio de estado)
  */
 async function checkThresholdAlerts(sensor: SensorHistory) {
+  // 🔒 SOLO DISPARAR ALERTAS SI HAY SESIÓN ACTIVA (desde GitHub Actions)
+  if (!currentSessionId) {
+    console.log(`⏸️ [NO-SESSION] Sesión no activa, saltando verificación de alertas (solo se alertan desde GitHub Actions)`);
+    return;
+  }
+  
   const rules = await getAlertRuleBySensor(sensor.sensor_id);
   
   if (!rules || rules.length === 0) {
@@ -392,56 +424,33 @@ async function checkThresholdAlerts(sensor: SensorHistory) {
     // Skip si la regla no tiene ID (no debería pasar)
     if (!rule.id) continue;
     
-    // 🔒 VERIFICACIÓN ESTRICTA: Consultar SIEMPRE la última alerta desde la BD
+    // 🔒 VERIFICACIÓN POR SESIÓN: Una alerta por regla/sensor en cada ejecución de GitHub Actions
     console.log(`🔍 [DEBUG] Evaluando regla ID ${rule.id} "${rule.name}" - Condición: ${rule.condition}`);
     
-    const cooldownKey = `${rule.id}_${sensor.sensor_id}`;
-    const now = Math.floor(Date.now() / 1000);
-    
-    // 🔒 PASO 1: Verificar última alerta en BD (ESTRICTO - siempre consultar)
-    const lastAlert = await getLastAlertForRule(rule.id, sensor.sensor_id);
-    
-    if (lastAlert) {
-      const timeSinceLastAlert = now - Math.floor(new Date(lastAlert.created_at).getTime() / 1000);
-      
-      // Si hay cooldown configurado, verificar tiempo
-      if (rule.cooldown > 0 && timeSinceLastAlert < rule.cooldown) {
-        console.log(`⏳ Cooldown activo para regla "${rule.name}" (${rule.cooldown - timeSinceLastAlert}s restantes)`);
-        continue;
-      }
-      
-      // 🔒 PASO 2: Para alertas de umbral (slow), verificar que la condición persiste
-      if (rule.condition === 'slow') {
-        // Si la última alerta fue exitosa y la condición sigue siendo la misma,
-        // NO volver a alertar (evitar spam)
-        const currentTrafficValue = parseTrafficValue(sensor.lastvalue || '');
-        
-        if (currentTrafficValue !== null && rule.threshold) {
-          const stillOverThreshold = currentTrafficValue > rule.threshold;
-          
-          if (stillOverThreshold && lastAlert.success) {
-            console.log(`🔒 [STRICT] Ya se alertó sobre umbral superado - Valor sigue alto (${currentTrafficValue.toFixed(2)} > ${rule.threshold}) - SKIP`);
-            continue;
-          }
-        }
-      }
-      
-      // 🔒 PASO 3: Para alertas DOWN, verificar que el estado cambió
-      if (rule.condition === 'down') {
-        if (lastAlert.status === sensor.status && lastAlert.success) {
-          console.log(`🔒 [STRICT] Estado sin cambios desde última alerta (${sensor.status}) - SKIP`);
-          continue;
-        }
-      }
-      
-      console.log(`✅ Cooldown cumplido (${timeSinceLastAlert}s desde última alerta)`);
-    } else {
-      console.log(`🆕 Primera alerta para esta regla`);
+    // 🔒 PASO 1: Verificar si ya se alertó en esta sesión (evitar duplicados en misma ejecución)
+    if (hasAlertedInSession(rule.id, sensor.sensor_id)) {
+      console.log(`🔒 [SESSION] Ya se alertó en esta sesión - SKIP`);
+      continue;
     }
     
-    // 🧪 Log especial para reglas de test (cooldown=0)
-    if (rule.cooldown === 0) {
-      console.log(`🧪 [TEST] Regla "${rule.name}" con cooldown=0 - Permitido solo si condición cambió`);
+    const now = Math.floor(Date.now() / 1000);
+    
+    // 🔒 PASO 2: Verificar cooldown desde última alerta (solo si cooldown > 0)
+    if (rule.cooldown > 0) {
+      const lastAlert = await getLastAlertForRule(rule.id, sensor.sensor_id);
+      
+      if (lastAlert) {
+        const timeSinceLastAlert = now - Math.floor(new Date(lastAlert.created_at).getTime() / 1000);
+        
+        if (timeSinceLastAlert < rule.cooldown) {
+          console.log(`⏳ Cooldown activo para regla "${rule.name}" (${rule.cooldown - timeSinceLastAlert}s restantes)`);
+          continue;
+        }
+        
+        console.log(`✅ Cooldown cumplido (${timeSinceLastAlert}s desde última alerta)`);
+      }
+    } else {
+      console.log(`🧪 [TEST] Regla "${rule.name}" con cooldown=0 - Se enviará en cada ejecución si condición se cumple`);
     }
     
     // Verificar condición
@@ -449,10 +458,11 @@ async function checkThresholdAlerts(sensor: SensorHistory) {
     
     if (shouldTrigger) {
       console.log(`🚨 Condición detectada: ${rule.name} (estado: ${sensor.status})`);
-      await triggerAlert(rule, sensor, dummyChange);
       
-      // ⚠️ NOTA: Ya NO guardamos en memoria (lastAlertTimes, lastAlertedStates)
-      // Ahora SIEMPRE consultamos la BD para tener estado persistente entre ejecuciones
+      // 🔒 Marcar que se alertó en esta sesión (evita duplicados en misma ejecución)
+      markAlertedInSession(rule.id, sensor.sensor_id);
+      
+      await triggerAlert(rule, sensor, dummyChange);
     }
   }
 }
@@ -509,6 +519,12 @@ async function checkRecoveryAlerts(sensor: SensorHistory, change: StatusChange) 
  * 🚨 Verificar y disparar alertas
  */
 async function checkAndTriggerAlerts(sensor: SensorHistory, change: StatusChange) {
+  // 🔒 SOLO DISPARAR ALERTAS SI HAY SESIÓN ACTIVA (desde GitHub Actions)
+  if (!currentSessionId) {
+    console.log(`⏸️ [NO-SESSION] Sesión no activa, saltando verificación de alertas (solo se alertan desde GitHub Actions)`);
+    return;
+  }
+  
   // Obtener reglas de alerta para este sensor
   const rules = await getAlertRuleBySensor(sensor.sensor_id);
   
@@ -520,44 +536,28 @@ async function checkAndTriggerAlerts(sensor: SensorHistory, change: StatusChange
     // Skip si la regla no tiene ID
     if (!rule.id) continue;
     
-    // 🆕 Verificar si el estado cambió desde la última alerta (para reglas down solamente)
-    // Warning desactivado globalmente
-    if (['down'].includes(rule.condition)) {
-      const stateKey = `${rule.id}_${sensor.sensor_id}`;
-      const lastAlertedStatus = lastAlertedStates.get(stateKey);
-      
-      // Si ya lo tenemos en memoria y es el mismo estado, skip
-      if (lastAlertedStatus === sensor.status) {
-        continue;
-      }
-      
-      // 🆕 Si no está en memoria, consultar la BD
-      if (!lastAlertedStatus) {
-        const lastAlert = await getLastAlertForRule(rule.id, sensor.sensor_id);
-        if (lastAlert && lastAlert.status === sensor.status) {
-          // Guardar en memoria para próximas verificaciones
-          lastAlertedStates.set(stateKey, sensor.status);
-          continue;
-        }
-      }
-    }
-    
-    // Verificar cooldown
-    const cooldownKey = `${rule.id}_${sensor.sensor_id}`;
-    const lastAlertTime = lastAlertTimes.get(cooldownKey);
-    const now = Math.floor(Date.now() / 1000);
-    
-    // 🧪 BYPASS: Ignorar cooldown si la regla tiene cooldown=0 (para testing)
-    const shouldCheckCooldown = rule.cooldown > 0;
-    
-    if (shouldCheckCooldown && lastAlertTime && (now - lastAlertTime) < rule.cooldown) {
-      console.log(`⏳ Cooldown activo para regla "${rule.name}" (${rule.cooldown - (now - lastAlertTime)}s restantes)`);
+    // 🔒 Verificar si ya se alertó en esta sesión (evitar duplicados en misma ejecución)
+    if (hasAlertedInSession(rule.id, sensor.sensor_id)) {
+      console.log(`🔒 [SESSION] Ya se alertó en esta sesión - SKIP`);
       continue;
     }
     
-    // Log para debugging
-    if (!shouldCheckCooldown) {
-      console.log(`🧪 [TEST] Regla "${rule.name}" con cooldown=0, se evaluará siempre`);
+    // Verificar cooldown (solo si cooldown > 0)
+    const now = Math.floor(Date.now() / 1000);
+    
+    if (rule.cooldown > 0) {
+      const lastAlert = await getLastAlertForRule(rule.id, sensor.sensor_id);
+      
+      if (lastAlert) {
+        const timeSinceLastAlert = now - Math.floor(new Date(lastAlert.created_at).getTime() / 1000);
+        
+        if (timeSinceLastAlert < rule.cooldown) {
+          console.log(`⏳ Cooldown activo para regla "${rule.name}" (${rule.cooldown - timeSinceLastAlert}s restantes)`);
+          continue;
+        }
+        
+        console.log(`✅ Cooldown cumplido (${timeSinceLastAlert}s desde última alerta)`);
+      }
     }
     
     // Verificar condición
@@ -565,18 +565,11 @@ async function checkAndTriggerAlerts(sensor: SensorHistory, change: StatusChange
     
     if (shouldTrigger) {
       console.log(`🚨 Disparando alerta: ${rule.name}`);
+      
+      // 🔒 Marcar que se alertó en esta sesión
+      markAlertedInSession(rule.id, sensor.sensor_id);
+      
       await triggerAlert(rule, sensor, change);
-      
-      // 🧪 Solo guardar en lastAlertTimes si hay cooldown > 0
-      if (rule.cooldown > 0) {
-        lastAlertTimes.set(cooldownKey, now);
-      }
-      
-      // 🆕 Guardar el estado por el cual se alertó (para reglas down solamente)
-      if (['down'].includes(rule.condition)) {
-        const stateKey = `${rule.id}_${sensor.sensor_id}`;
-        lastAlertedStates.set(stateKey, sensor.status);
-      }
     }
   }
 }

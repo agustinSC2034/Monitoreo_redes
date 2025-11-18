@@ -10,7 +10,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { processSensorData } from '@/lib/alertMonitor';
+import { processSensorData, startMonitoringSession } from '@/lib/alertMonitor';
 import { getPRTGClient, type PRTGLocation } from '@/lib/prtgClient';
 
 export const dynamic = 'force-dynamic';
@@ -22,9 +22,12 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const location = (searchParams.get('location') || 'tandil') as PRTGLocation;
     
+    // 🔑 Iniciar nueva sesión de monitoreo (evita duplicados en esta ejecución)
+    const sessionId = startMonitoringSession(`cron_${location}_${Date.now()}`);
+    
     // Log de inicio
     const startTime = Date.now();
-    console.log(`🤖 [CRON] Iniciando chequeo automático de alertas para ${location.toUpperCase()}...`);
+    console.log(`🤖 [CRON] Iniciando chequeo automático de alertas para ${location.toUpperCase()}... [Session: ${sessionId}]`);
     
     // Verificar token de seguridad (opcional pero recomendado)
     const authHeader = request.headers.get('authorization');
