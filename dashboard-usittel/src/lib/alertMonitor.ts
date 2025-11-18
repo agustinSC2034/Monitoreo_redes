@@ -425,7 +425,7 @@ async function checkThresholdAlerts(sensor: SensorHistory) {
     if (rule.cooldown > 0) {
       const lastAlert = await getLastAlertForRule(rule.id, sensor.sensor_id);
       
-      if (lastAlert) {
+      if (lastAlert && lastAlert.created_at) {
         const timeSinceLastAlert = now - Math.floor(new Date(lastAlert.created_at).getTime() / 1000);
         
         if (timeSinceLastAlert < rule.cooldown) {
