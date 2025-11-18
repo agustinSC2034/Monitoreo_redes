@@ -17,7 +17,7 @@ const PRTG_TANDIL_USERNAME = process.env.PRTG_USERNAME || 'nocittel';
 const PRTG_TANDIL_PASSHASH = process.env.PRTG_PASSHASH || '';
 
 // 🔐 Credenciales LA MATANZA (LARANET)
-const PRTG_LARANET_BASE_URL = process.env.PRTG_LARANET_BASE_URL || 'http://stats.reditel.com.ar:8995';
+const PRTG_LARANET_BASE_URL = process.env.PRTG_LARANET_BASE_URL || 'http://38.159.225.250:8090';
 const PRTG_LARANET_USERNAME = process.env.PRTG_LARANET_USERNAME || 'nocittel';
 const PRTG_LARANET_PASSHASH = process.env.PRTG_LARANET_PASSHASH || '';
 
