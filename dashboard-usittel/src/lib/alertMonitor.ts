@@ -743,6 +743,7 @@ function formatAlertMessage(rule: AlertRule, sensor: SensorHistory, change: Stat
   }
   
   message += `FECHA/HORA: ${timestamp}\n`;
+  message += `\nURL: https://monitoreo-redes.vercel.app/`;
   
   return message;
 }
