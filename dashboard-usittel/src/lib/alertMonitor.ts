@@ -256,13 +256,6 @@ async function detectStatusChange(current: SensorHistory) {
     if (current.status_raw === 3 && lastKnown.status_raw !== 3) { // Recuperación: X → UP
       console.log(`✅ Sensor recuperado: ${current.sensor_name} (NO SE ENVÍA ALERTA)`);
       // await checkRecoveryAlerts(current, change); // DESHABILITADO
-      
-      // Limpiar los estados alertados para que pueda alertar nuevamente si vuelve a fallar
-      const rules = await getAlertRuleBySensor(sensorId);
-      for (const rule of rules) {
-        const stateKey = `${rule.id}_${sensorId}`;
-        lastAlertedStates.delete(stateKey);
-      }
     }
     
     // Verificar si hay que disparar alertas por cambio de estado
@@ -680,17 +673,20 @@ async function triggerAlert(rule: AlertRule, sensor: SensorHistory, change: Stat
             break;
           
           case 'telegram':
-            const telegramSuccess = await sendTelegramAlert({
-              sensorName: sensor.sensor_name,
-              status: sensor.status,
-              message,
-              location: sensor.sensor_id.startsWith('4') || sensor.sensor_id.startsWith('5') || sensor.sensor_id.startsWith('3') || sensor.sensor_id.startsWith('6') 
-                ? 'LARANET LA MATANZA' 
-                : 'USITTEL TANDIL',
-              sensorId: sensor.sensor_id
-            });
-            channelResults.push({ channel: 'telegram', success: telegramSuccess });
+            // ⚠️ TELEGRAM TEMPORALMENTE DESHABILITADO PARA PRUEBAS
+            console.log('🔕 Telegram deshabilitado temporalmente');
+            channelResults.push({ channel: 'telegram', success: true });
             break;
+            // const telegramSuccess = await sendTelegramAlert({
+            //   sensorName: sensor.sensor_name,
+            //   status: sensor.status,
+            //   message,
+            //   location: sensor.sensor_id.startsWith('4') || sensor.sensor_id.startsWith('5') || sensor.sensor_id.startsWith('3') || sensor.sensor_id.startsWith('6') 
+            //     ? 'LARANET LA MATANZA' 
+            //     : 'USITTEL TANDIL',
+            //   sensorId: sensor.sensor_id
+            // });
+            // channelResults.push({ channel: 'telegram', success: telegramSuccess });
           
           default:
             console.warn(`⚠️ Canal desconocido: ${channel}`);
