@@ -89,7 +89,8 @@ export default function HistoricalChart({
       '13683': 2000,   // TECO - 2s
       '13684': 4000,   // ARSAT - 4s
       '2137': 6000,    // RDA - 6s
-      '13673': 8000    // DTV - 8s
+      '13673': 8000,   // DTV - 8s
+      '13726': 10000   // WAN-to-RDB - 10s
     };
     
     const initialDelay = sensorDelays[sensorId] || 0;

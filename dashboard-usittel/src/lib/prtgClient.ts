@@ -385,7 +385,7 @@ class PRTGClient {
           4665, // 7. VLAN500-WAN (LARA 2.2)
           4642  // 8. vlan500-iBGP (LARA 2.1)
         ]
-      : [13682, 13684, 13683, 2137, 13673]; // Tandil (USITTEL) - orden actual
+      : [13682, 13684, 13683, 2137, 13673, 13726]; // Tandil (USITTEL) - orden actual + WAN-to-RDB
     
     console.log(`🚨 Consultando sensores críticos de ${this.location.toUpperCase()}...`);
     

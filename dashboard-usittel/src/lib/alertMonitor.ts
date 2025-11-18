@@ -224,10 +224,11 @@ async function detectStatusChange(current: SensorHistory) {
       trafficValue: currentTraffic || undefined
     });
     
-    // 🆕 Si el sensor volvió a estado normal (UP), disparar alerta de recuperación
+    // ⚠️ Si el sensor volvió a estado normal (UP), NO alertar recuperación
+    // SOLO ALERTAMOS CUANDO CAE, NO CUANDO SE RECUPERA
     if (current.status_raw === 3 && lastKnown.status_raw !== 3) { // Recuperación: X → UP
-      console.log(`✅ Sensor recuperado: ${current.sensor_name}`);
-      await checkRecoveryAlerts(current, change);
+      console.log(`✅ Sensor recuperado: ${current.sensor_name} (NO SE ENVÍA ALERTA)`);
+      // await checkRecoveryAlerts(current, change); // DESHABILITADO
       
       // Limpiar los estados alertados para que pueda alertar nuevamente si vuelve a fallar
       const rules = await getAlertRuleBySensor(sensorId);
@@ -248,7 +249,8 @@ async function detectStatusChange(current: SensorHistory) {
       trafficValue: currentTraffic || undefined
     });
     
-    // 🆕 Verificar si hubo recuperación consultando la BD (en caso de reinicio)
+    // ⚠️ Verificar si hubo recuperación consultando la BD (en caso de reinicio)
+    // DESHABILITADO: No alertamos recuperaciones
     if (current.status_raw === 3) {
       const lastChange = await getLastStatusChange(sensorId);
       
@@ -256,7 +258,7 @@ async function detectStatusChange(current: SensorHistory) {
       if (lastChange && !lastChange.new_status.toLowerCase().includes('up') && 
           !lastChange.new_status.toLowerCase().includes('disponible')) {
         
-        console.log(`✅ [BD] Recuperación detectada: ${current.sensor_name} (${lastChange.new_status} → UP)`);
+        console.log(`✅ [BD] Recuperación detectada: ${current.sensor_name} (${lastChange.new_status} → UP) - NO SE ENVÍA ALERTA`);
         
         const recoveryChange: StatusChange = {
           sensor_id: current.sensor_id,
@@ -266,7 +268,7 @@ async function detectStatusChange(current: SensorHistory) {
           timestamp: current.timestamp
         };
         
-        await checkRecoveryAlerts(current, recoveryChange);
+        // await checkRecoveryAlerts(current, recoveryChange); // DESHABILITADO
         
         // Guardar el cambio de estado para no alertar de nuevo
         await saveStatusChange(recoveryChange);
@@ -686,15 +688,18 @@ async function triggerAlert(rule: AlertRule, sensor: SensorHistory, change: Stat
             break;
           
           case 'telegram':
-            const telegramSuccess = await sendTelegramAlert({
-              sensorName: sensor.sensor_name,
-              status: sensor.status,
-              message,
-              location: sensor.sensor_id.startsWith('4') || sensor.sensor_id.startsWith('5') || sensor.sensor_id.startsWith('3') || sensor.sensor_id.startsWith('6') 
-                ? 'LARANET LA MATANZA' 
-                : 'USITTEL TANDIL'
-            });
-            channelResults.push({ channel: 'telegram', success: telegramSuccess });
+            // ⚠️ TELEGRAM TEMPORALMENTE DESHABILITADO
+            // const telegramSuccess = await sendTelegramAlert({
+            //   sensorName: sensor.sensor_name,
+            //   status: sensor.status,
+            //   message,
+            //   location: sensor.sensor_id.startsWith('4') || sensor.sensor_id.startsWith('5') || sensor.sensor_id.startsWith('3') || sensor.sensor_id.startsWith('6') 
+            //     ? 'LARANET LA MATANZA' 
+            //     : 'USITTEL TANDIL'
+            // });
+            // channelResults.push({ channel: 'telegram', success: telegramSuccess });
+            console.log('🔕 Telegram deshabilitado temporalmente');
+            channelResults.push({ channel: 'telegram', success: true });
             break;
           
           default:
