@@ -67,6 +67,7 @@ export interface AlertHistory {
   success: boolean;
   error_message?: string;
   timestamp?: number;
+  created_at?: string; // Timestamp de creación en formato ISO
 }
 
 export interface StatusChange {

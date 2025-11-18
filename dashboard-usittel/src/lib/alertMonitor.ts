@@ -392,50 +392,56 @@ async function checkThresholdAlerts(sensor: SensorHistory) {
     // Skip si la regla no tiene ID (no debería pasar)
     if (!rule.id) continue;
     
-    // 🆕 DEBUG: Log de tipo de regla
+    // 🔒 VERIFICACIÓN ESTRICTA: Consultar SIEMPRE la última alerta desde la BD
     console.log(`🔍 [DEBUG] Evaluando regla ID ${rule.id} "${rule.name}" - Condición: ${rule.condition}`);
     
-    // 🆕 Verificar si el estado cambió desde la última alerta (SOLO PARA REGLAS DOWN)
-    // Las reglas 'slow' (umbral de tráfico) no deben bloquearse por estado, solo por cooldown
-    if (rule.condition === 'down') {
-      console.log(`  ↳ Regla tipo DOWN - Verificando estado en BD...`);
-      const stateKey = `${rule.id}_${sensor.sensor_id}`;
-      const lastAlertedStatus = lastAlertedStates.get(stateKey);
+    const cooldownKey = `${rule.id}_${sensor.sensor_id}`;
+    const now = Math.floor(Date.now() / 1000);
+    
+    // 🔒 PASO 1: Verificar última alerta en BD (ESTRICTO - siempre consultar)
+    const lastAlert = await getLastAlertForRule(rule.id, sensor.sensor_id);
+    
+    if (lastAlert) {
+      const timeSinceLastAlert = now - Math.floor(new Date(lastAlert.created_at).getTime() / 1000);
       
-      // Si ya lo tenemos en memoria y es el mismo estado, skip
-      if (lastAlertedStatus === sensor.status) {
-        console.log(`  ↳ Estado en memoria coincide: ${lastAlertedStatus} - SKIP`);
+      // Si hay cooldown configurado, verificar tiempo
+      if (rule.cooldown > 0 && timeSinceLastAlert < rule.cooldown) {
+        console.log(`⏳ Cooldown activo para regla "${rule.name}" (${rule.cooldown - timeSinceLastAlert}s restantes)`);
         continue;
       }
       
-      // 🆕 Si no está en memoria, consultar la BD
-      if (!lastAlertedStatus) {
-        const lastAlert = await getLastAlertForRule(rule.id, sensor.sensor_id);
-        if (lastAlert && lastAlert.status === sensor.status) {
-          console.log(`  ↳ Estado en BD coincide: ${lastAlert.status} - SKIP`);
-          // Guardar en memoria para próximas verificaciones
-          lastAlertedStates.set(stateKey, sensor.status);
+      // 🔒 PASO 2: Para alertas de umbral (slow), verificar que la condición persiste
+      if (rule.condition === 'slow') {
+        // Si la última alerta fue exitosa y la condición sigue siendo la misma,
+        // NO volver a alertar (evitar spam)
+        const currentTrafficValue = parseTrafficValue(sensor.lastvalue || '');
+        
+        if (currentTrafficValue !== null && rule.threshold) {
+          const stillOverThreshold = currentTrafficValue > rule.threshold;
+          
+          if (stillOverThreshold && lastAlert.success) {
+            console.log(`🔒 [STRICT] Ya se alertó sobre umbral superado - Valor sigue alto (${currentTrafficValue.toFixed(2)} > ${rule.threshold}) - SKIP`);
+            continue;
+          }
+        }
+      }
+      
+      // 🔒 PASO 3: Para alertas DOWN, verificar que el estado cambió
+      if (rule.condition === 'down') {
+        if (lastAlert.status === sensor.status && lastAlert.success) {
+          console.log(`🔒 [STRICT] Estado sin cambios desde última alerta (${sensor.status}) - SKIP`);
           continue;
         }
       }
+      
+      console.log(`✅ Cooldown cumplido (${timeSinceLastAlert}s desde última alerta)`);
     } else {
-      console.log(`  ↳ Regla tipo ${rule.condition.toUpperCase()} - NO verifica estado, solo cooldown`);
+      console.log(`🆕 Primera alerta para esta regla`);
     }
     
-    // Verificar cooldown
-    const cooldownKey = `${rule.id}_${sensor.sensor_id}`;
-    const lastAlertTime = lastAlertTimes.get(cooldownKey);
-    const now = Math.floor(Date.now() / 1000);
-    
-    const shouldCheckCooldown = rule.cooldown > 0;
-    
-    if (shouldCheckCooldown && lastAlertTime && (now - lastAlertTime) < rule.cooldown) {
-      console.log(`⏳ Cooldown activo para regla "${rule.name}"`);
-      continue;
-    }
-    
-    if (!shouldCheckCooldown) {
-      console.log(`🧪 [TEST] Regla "${rule.name}" con cooldown=0, se evaluará siempre`);
+    // 🧪 Log especial para reglas de test (cooldown=0)
+    if (rule.cooldown === 0) {
+      console.log(`🧪 [TEST] Regla "${rule.name}" con cooldown=0 - Permitido solo si condición cambió`);
     }
     
     // Verificar condición
@@ -445,16 +451,8 @@ async function checkThresholdAlerts(sensor: SensorHistory) {
       console.log(`🚨 Condición detectada: ${rule.name} (estado: ${sensor.status})`);
       await triggerAlert(rule, sensor, dummyChange);
       
-      // 🧪 Solo guardar en lastAlertTimes si hay cooldown > 0
-      if (rule.cooldown > 0) {
-        lastAlertTimes.set(cooldownKey, now);
-      }
-      
-      // 🆕 Guardar el estado por el cual se alertó (SOLO PARA REGLAS DOWN)
-      if (rule.condition === 'down') {
-        const stateKey = `${rule.id}_${sensor.sensor_id}`;
-        lastAlertedStates.set(stateKey, sensor.status);
-      }
+      // ⚠️ NOTA: Ya NO guardamos en memoria (lastAlertTimes, lastAlertedStates)
+      // Ahora SIEMPRE consultamos la BD para tener estado persistente entre ejecuciones
     }
   }
 }
