@@ -379,9 +379,9 @@ async function checkThresholdAlerts(sensor: SensorHistory) {
   };
   
   for (const rule of rules) {
-    // Evaluar reglas de tipo 'slow', 'down' (Warning desactivado globalmente)
+    // Evaluar reglas de tipo 'slow' (máximo), 'traffic_low' (mínimo), 'down' (Warning desactivado globalmente)
     // Nota: traffic_spike y traffic_drop se manejan en detectTrafficChange
-    if (!['slow', 'down'].includes(rule.condition)) continue;
+    if (!['slow', 'traffic_low', 'down'].includes(rule.condition)) continue;
     
     // Skip si la regla no tiene ID (no debería pasar)
     if (!rule.id) continue;
@@ -560,8 +560,26 @@ function evaluateAlertCondition(rule: AlertRule, sensor: SensorHistory, change: 
       if (rule.threshold && sensor.lastvalue) {
         const trafficValue = parseTrafficValue(sensor.lastvalue);
         if (trafficValue !== null) {
-          console.log(`📊 Tráfico actual: ${trafficValue} Mbit/s | Umbral: ${rule.threshold} Mbit/s`);
+          console.log(`📊 Tráfico actual: ${trafficValue} Mbit/s | Umbral máximo: ${rule.threshold} Mbit/s`);
           return trafficValue > rule.threshold;
+        }
+      }
+      return false;
+    
+    case 'traffic_low':
+      // ⚠️ Evaluar umbral de tráfico (mínimo)
+      // 🔴 PRIORIDAD: No alertar si el sensor está DOWN (status_raw = 5)
+      const isDown = sensor.status_raw === 5 || sensor.status.toLowerCase().includes('down');
+      if (isDown) {
+        console.log(`⏸️ [${sensor.sensor_id}] Sensor DOWN - Saltando alerta de umbral mínimo (prioridad a DOWN)`);
+        return false;
+      }
+      
+      if (rule.threshold && sensor.lastvalue) {
+        const trafficValue = parseTrafficValue(sensor.lastvalue);
+        if (trafficValue !== null) {
+          console.log(`📊 Tráfico actual: ${trafficValue} Mbit/s | Umbral mínimo: ${rule.threshold} Mbit/s`);
+          return trafficValue < rule.threshold;
         }
       }
       return false;
@@ -719,12 +737,20 @@ function formatAlertMessage(rule: AlertRule, sensor: SensorHistory, change: Stat
   message += `SENSOR: ${sensor.sensor_name}\n`;
   
   if (rule.condition === 'slow' && rule.threshold) {
-    // Alerta de umbral - Convertir valor actual a Mbit/s
+    // Alerta de umbral máximo - Convertir valor actual a Mbit/s
     const trafficValue = parseTrafficValue(sensor.lastvalue || '');
     const trafficFormatted = trafficValue !== null ? `${trafficValue.toFixed(2)} Mbit/s` : 'N/A';
     
-    message += `Umbral de trafico superado\n`;
-    message += `Umbral: ${rule.threshold.toFixed(2)} Mbit/s\n`;
+    message += `TIPO: Umbral maximo de trafico superado\n`;
+    message += `Umbral maximo: ${rule.threshold.toFixed(2)} Mbit/s\n`;
+    message += `Valor actual: ${trafficFormatted}\n`;
+  } else if (rule.condition === 'traffic_low' && rule.threshold) {
+    // Alerta de umbral mínimo - Convertir valor actual a Mbit/s
+    const trafficValue = parseTrafficValue(sensor.lastvalue || '');
+    const trafficFormatted = trafficValue !== null ? `${trafficValue.toFixed(2)} Mbit/s` : 'N/A';
+    
+    message += `TIPO: Umbral minimo de trafico\n`;
+    message += `Umbral minimo: ${rule.threshold.toFixed(2)} Mbit/s\n`;
     message += `Valor actual: ${trafficFormatted}\n`;
   } else if (rule.condition === 'traffic_spike' || rule.condition === 'traffic_drop') {
     // Alerta de cambio drástico

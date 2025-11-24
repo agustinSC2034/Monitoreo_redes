@@ -45,7 +45,7 @@ export interface AlertRule {
   id?: number;
   name: string;
   sensor_id: string;
-  condition: 'down' | 'warning' | 'unusual' | 'slow' | 'traffic_spike' | 'traffic_drop';
+  condition: 'down' | 'warning' | 'unusual' | 'slow' | 'traffic_low' | 'traffic_spike' | 'traffic_drop';
   threshold?: number;
   channels: string[];
   recipients: string[];
