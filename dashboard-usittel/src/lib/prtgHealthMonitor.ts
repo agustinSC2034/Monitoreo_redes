@@ -21,7 +21,8 @@ interface PRTGHealthStatus {
 const healthStatus = new Map<PRTGLocation, PRTGHealthStatus>();
 
 // Configuración
-const RECOVERY_ALERT_ENABLED = false; // NO enviar alerta cuando se recupera (solo alertar cuando está caído)
+const ALERT_DOWN_ENABLED = false; // ❌ ALERTAS DESACTIVADAS - Solo logging
+const RECOVERY_ALERT_ENABLED = false; // NO enviar alerta cuando se recupera
 
 // Destinatarios de alertas (mismo que las alertas de sensores)
 const ALERT_RECIPIENTS = [
@@ -73,8 +74,8 @@ export async function recordPRTGFailure(
   // Solo alertar si NO está ya marcado como caído
   // GitHub Actions se ejecuta cada 5 minutos, así que no necesitamos cooldown adicional
   if (!status.isDown) {
-    console.log(`🚨 [PRTG-HEALTH] Primera detección de fallo, enviando alerta...`);
-    await triggerPRTGDownAlert(location, errorMessage);
+    console.log(`⏸️ [PRTG-HEALTH] Primera detección de fallo (ALERTA DESACTIVADA)`);
+    // await triggerPRTGDownAlert(location, errorMessage); // DESACTIVADO
     updateHealthStatus(location, {
       isDown: true,
       lastAlertTime: now

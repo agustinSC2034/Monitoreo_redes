@@ -23,7 +23,7 @@ const CRITICAL_SENSORS_TANDIL = ['13682', '13684', '13683']; // CABASE, IPLAN, T
 const pausedStatus = new Map<string, PausedSensorStatus>();
 
 // Configuración
-const ALERT_ENABLED = true; // ✅ ALERTAS HABILITADAS para enlaces pausados
+const ALERT_ENABLED = false; // ❌ ALERTAS DESACTIVADAS (solo logging)
 const ALERT_RECIPIENTS = [
   'agustin.scutari@it-tel.com.ar',
   'ja@it-tel.com.ar',
