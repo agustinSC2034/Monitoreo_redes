@@ -52,6 +52,7 @@ export async function GET(request: NextRequest) {
     const results = [];
     let prtgConnectionFailed = false;
     let prtgErrorMessage = '';
+    let prtgSuccessfulCheck = false; // Track si al menos 1 sensor respondió OK
     
     // Helper para delay entre sensores (evitar rate limiting)
     const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -67,6 +68,9 @@ export async function GET(request: NextRequest) {
         
         console.log(`🔍 [CRON] Consultando sensor ${sensorId}...`);
         const sensor = await prtgClient.getSensor(parseInt(sensorId));
+        
+        // ✅ PRTG respondió correctamente (aunque el sensor esté pausado)
+        prtgSuccessfulCheck = true;
         
         console.log(`📊 [CRON] Sensor ${sensorId} (${sensor.name}): ${sensor.status} - ${sensor.lastvalue}`);
         
@@ -117,16 +121,14 @@ export async function GET(request: NextRequest) {
     }
     
     // 🏥 Actualizar estado de salud del PRTG
-    if (prtgConnectionFailed) {
+    // Solo marcar como caído si NO hubo ningún chequeo exitoso
+    if (prtgConnectionFailed && !prtgSuccessfulCheck) {
       console.error(`🏥 [PRTG-HEALTH] Detectado fallo de conexión al PRTG ${location.toUpperCase()}`);
       await recordPRTGFailure(location, prtgErrorMessage);
-    } else {
-      // Al menos un sensor se consultó exitosamente
-      const successfulChecks = results.filter(r => r.checked).length;
-      if (successfulChecks > 0) {
-        console.log(`🏥 [PRTG-HEALTH] PRTG ${location.toUpperCase()} operativo (${successfulChecks}/${sensorIds.length} sensores consultados)`);
-        await recordPRTGSuccess(location);
-      }
+    } else if (prtgSuccessfulCheck) {
+      // Al menos un sensor se consultó exitosamente - PRTG está OK
+      console.log(`🏥 [PRTG-HEALTH] PRTG ${location.toUpperCase()} operativo`);
+      await recordPRTGSuccess(location);
     }
     
     const duration = Date.now() - startTime;

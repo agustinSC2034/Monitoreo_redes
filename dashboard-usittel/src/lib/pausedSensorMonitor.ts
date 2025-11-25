@@ -173,19 +173,14 @@ async function triggerPausedSensorAlert(sensorId: string, sensorName: string): P
   });
   
   const message = `
-Sensor: ${sensorName}
-ID: ${sensorId}
+${sensorName}
 
+ID: ${sensorId}
 TIPO: Sensor pausado en PRTG
 ESTADO: No es posible monitorear el enlace
 FECHA/HORA: ${timestamp}
 
 ⚠️ El sensor está pausado en PRTG y no se puede verificar el estado del enlace.
-
-ACCIÓN REQUERIDA:
-- Verificar por qué está pausado
-- Reactivar si corresponde
-- Revisar configuración
 
 Dashboard: https://monitoreo-redes.vercel.app/
 `.trim();
