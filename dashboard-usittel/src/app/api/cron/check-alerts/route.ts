@@ -12,6 +12,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { processSensorData, startMonitoringSession } from '@/lib/alertMonitor';
 import { getPRTGClient, type PRTGLocation } from '@/lib/prtgClient';
+import { recordPRTGFailure, recordPRTGSuccess } from '@/lib/prtgHealthMonitor';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60; // 60 segundos máximo
@@ -48,6 +49,8 @@ export async function GET(request: NextRequest) {
       : ['13682', '13684', '13683', '2137', '13673', '13726']; // IDs de Tandil + WAN-to-RDB
     
     const results = [];
+    let prtgConnectionFailed = false;
+    let prtgErrorMessage = '';
     
     // Helper para delay entre sensores (evitar rate limiting)
     const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -85,6 +88,16 @@ export async function GET(request: NextRequest) {
         const errorMsg = error instanceof Error ? error.message : 'Error desconocido';
         console.error(`❌ [CRON] Error con sensor ${sensorId}:`, errorMsg);
         
+        // 🏥 Detectar fallo de conexión al PRTG
+        if (errorMsg.includes('fetch') || 
+            errorMsg.includes('ECONNREFUSED') || 
+            errorMsg.includes('ETIMEDOUT') ||
+            errorMsg.includes('Network') ||
+            errorMsg.includes('Error HTTP')) {
+          prtgConnectionFailed = true;
+          prtgErrorMessage = errorMsg;
+        }
+        
         // Si es error 429, pausar más tiempo
         if (errorMsg.includes('429')) {
           console.warn(`⏸️ [CRON] Rate limit detectado, pausando 2 segundos...`);
@@ -96,6 +109,19 @@ export async function GET(request: NextRequest) {
           checked: false,
           error: errorMsg
         });
+      }
+    }
+    
+    // 🏥 Actualizar estado de salud del PRTG
+    if (prtgConnectionFailed) {
+      console.error(`🏥 [PRTG-HEALTH] Detectado fallo de conexión al PRTG ${location.toUpperCase()}`);
+      await recordPRTGFailure(location, prtgErrorMessage);
+    } else {
+      // Al menos un sensor se consultó exitosamente
+      const successfulChecks = results.filter(r => r.checked).length;
+      if (successfulChecks > 0) {
+        console.log(`🏥 [PRTG-HEALTH] PRTG ${location.toUpperCase()} operativo (${successfulChecks}/${sensorIds.length} sensores consultados)`);
+        await recordPRTGSuccess(location);
       }
     }
     
