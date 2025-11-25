@@ -5,9 +5,9 @@
  * y envía alertas por email y Telegram
  */
 
+import type { PRTGLocation } from './prtgClient';
 import { sendAlertEmail } from './emailService';
 import { sendTelegramAlert } from './telegramService';
-import type { PRTGLocation } from './prtgClient';
 
 // 🕐 Estado de salud de cada PRTG
 interface PRTGHealthStatus {
@@ -21,8 +21,6 @@ interface PRTGHealthStatus {
 const healthStatus = new Map<PRTGLocation, PRTGHealthStatus>();
 
 // Configuración
-const FAILURE_THRESHOLD = 1; // Cuántos fallos consecutivos antes de alertar
-const ALERT_COOLDOWN = 1800; // 30 minutos entre alertas del mismo PRTG
 const RECOVERY_ALERT_ENABLED = true; // Enviar alerta cuando se recupera
 
 // Destinatarios de alertas (mismo que las alertas de sensores)
@@ -65,39 +63,24 @@ export async function recordPRTGFailure(
   const status = getHealthStatus(location);
   const now = Math.floor(Date.now() / 1000);
   
-  // Incrementar contador de fallos
-  const consecutiveFailures = status.consecutiveFailures + 1;
-  
   console.log(`❌ [PRTG-HEALTH] Fallo de conexión a PRTG ${location.toUpperCase()}: ${errorMessage}`);
-  console.log(`   Fallos consecutivos: ${consecutiveFailures}/${FAILURE_THRESHOLD}`);
   
   updateHealthStatus(location, {
-    consecutiveFailures,
+    consecutiveFailures: status.consecutiveFailures + 1,
     lastCheckTime: now
   });
   
-  // Si alcanzamos el umbral y no está marcado como caído, alertar
-  if (consecutiveFailures >= FAILURE_THRESHOLD && !status.isDown) {
+  // Solo alertar si NO está ya marcado como caído
+  // GitHub Actions se ejecuta cada 5 minutos, así que no necesitamos cooldown adicional
+  if (!status.isDown) {
+    console.log(`🚨 [PRTG-HEALTH] Primera detección de fallo, enviando alerta...`);
     await triggerPRTGDownAlert(location, errorMessage);
     updateHealthStatus(location, {
       isDown: true,
       lastAlertTime: now
     });
-  } 
-  // Si ya está marcado como caído, verificar cooldown
-  else if (status.isDown) {
-    const timeSinceLastAlert = now - status.lastAlertTime;
-    
-    if (timeSinceLastAlert >= ALERT_COOLDOWN) {
-      console.log(`⏰ [PRTG-HEALTH] Cooldown cumplido, enviando alerta de recordatorio...`);
-      await triggerPRTGDownAlert(location, errorMessage);
-      updateHealthStatus(location, {
-        lastAlertTime: now
-      });
-    } else {
-      const remaining = ALERT_COOLDOWN - timeSinceLastAlert;
-      console.log(`⏳ [PRTG-HEALTH] PRTG ${location.toUpperCase()} sigue caído, cooldown activo (${Math.floor(remaining / 60)} minutos restantes)`);
-    }
+  } else {
+    console.log(`⏸️ [PRTG-HEALTH] PRTG ${location.toUpperCase()} sigue caído (no se reenvía alerta)`);
   }
 }
 
@@ -130,13 +113,12 @@ async function triggerPRTGDownAlert(
   errorMessage: string
 ): Promise<void> {
   const locationName = location === 'tandil' ? 'USITTEL TANDIL' : 'LARANET LA MATANZA';
-  const prtgUrl = location === 'tandil' 
-    ? 'http://38.253.65.250:8080'
-    : 'http://38.159.225.250:8090';
+  const prtgMapUrl = location === 'tandil' 
+    ? 'http://38.253.65.250:8080/public/mapshow.htm?id=2197&mapid=7418EC41-A903-47CF-87A2-70E6CC8AAFF5'
+    : 'http://stats.reditel.com.ar:8995/public/mapshow.htm?id=3929&mapid=90D14EB2-69FC-4D98-A211-75BDECF55027';
   
   console.log(`🚨 [PRTG-HEALTH] Enviando alerta de PRTG caído: ${locationName}`);
   
-  // Preparar mensaje
   const timestamp = new Date().toLocaleString('es-AR', {
     year: 'numeric',
     month: '2-digit',
@@ -151,32 +133,20 @@ async function triggerPRTGDownAlert(
   const message = `
 ${locationName}
 
-🔴 SERVIDOR PRTG NO RESPONDE
-
-UBICACIÓN: ${locationName}
-URL: ${prtgUrl}
-ESTADO: No se puede conectar al servidor
+TIPO: Servidor PRTG no responde
+ESTADO: No se puede conectar
 ERROR: ${errorMessage}
 FECHA/HORA: ${timestamp}
 
-⚠️ IMPACTO:
-- No se pueden consultar sensores de ${location === 'tandil' ? 'Tandil' : 'La Matanza'}
-- Sistema de monitoreo automático afectado
-- GitHub Actions reportará fallos hasta que se recupere
-
-ACCIÓN REQUERIDA:
-1. Verificar conectividad del servidor PRTG
-2. Revisar si el servicio PRTG está corriendo
-3. Verificar firewall y permisos de red
-
-URL del dashboard: https://monitoreo-redes.vercel.app/
+PRTG: ${prtgMapUrl}
+Dashboard: https://monitoreo-redes.vercel.app/
 `.trim();
 
   // Enviar por email
   try {
     await sendAlertEmail(
       ALERT_RECIPIENTS,
-      `🔴 ALERTA CRÍTICA: Servidor PRTG ${locationName} Caído`,
+      `Alerta: Servidor PRTG ${locationName} No Responde`,
       message,
       'critical'
     );
@@ -189,7 +159,7 @@ URL del dashboard: https://monitoreo-redes.vercel.app/
   try {
     await sendTelegramAlert({
       sensorName: `Servidor PRTG ${locationName}`,
-      status: 'PRTG Caído',
+      status: 'PRTG No Responde',
       message: message,
       location: locationName,
       sensorId: location === 'tandil' ? 'PRTG-TANDIL' : 'PRTG-MATANZA'
@@ -205,9 +175,9 @@ URL del dashboard: https://monitoreo-redes.vercel.app/
  */
 async function triggerPRTGRecoveryAlert(location: PRTGLocation): Promise<void> {
   const locationName = location === 'tandil' ? 'USITTEL TANDIL' : 'LARANET LA MATANZA';
-  const prtgUrl = location === 'tandil' 
-    ? 'http://38.253.65.250:8080'
-    : 'http://38.159.225.250:8090';
+  const prtgMapUrl = location === 'tandil' 
+    ? 'http://38.253.65.250:8080/public/mapshow.htm?id=2197&mapid=7418EC41-A903-47CF-87A2-70E6CC8AAFF5'
+    : 'http://stats.reditel.com.ar:8995/public/mapshow.htm?id=3929&mapid=90D14EB2-69FC-4D98-A211-75BDECF55027';
   
   console.log(`✅ [PRTG-HEALTH] Enviando alerta de recuperación: ${locationName}`);
   
@@ -225,26 +195,19 @@ async function triggerPRTGRecoveryAlert(location: PRTGLocation): Promise<void> {
   const message = `
 ${locationName}
 
-✅ SERVIDOR PRTG RECUPERADO
-
-UBICACIÓN: ${locationName}
-URL: ${prtgUrl}
+TIPO: Servidor PRTG recuperado
 ESTADO: Conexión restablecida
 FECHA/HORA: ${timestamp}
 
-✅ ESTADO ACTUAL:
-- Servidor PRTG respondiendo correctamente
-- Monitoreo automático restablecido
-- GitHub Actions funcionando normalmente
-
-URL del dashboard: https://monitoreo-redes.vercel.app/
+PRTG: ${prtgMapUrl}
+Dashboard: https://monitoreo-redes.vercel.app/
 `.trim();
 
   // Enviar por email
   try {
     await sendAlertEmail(
       ALERT_RECIPIENTS,
-      `✅ RECUPERADO: Servidor PRTG ${locationName}`,
+      `Alerta: Servidor PRTG ${locationName} Recuperado`,
       message,
       'high'
     );
@@ -257,7 +220,7 @@ URL del dashboard: https://monitoreo-redes.vercel.app/
   try {
     await sendTelegramAlert({
       sensorName: `Servidor PRTG ${locationName}`,
-      status: 'PRTG Operativo',
+      status: 'PRTG Recuperado',
       message: message,
       location: locationName,
       sensorId: location === 'tandil' ? 'PRTG-TANDIL' : 'PRTG-MATANZA'

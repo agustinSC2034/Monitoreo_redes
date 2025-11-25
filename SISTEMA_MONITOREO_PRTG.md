@@ -15,9 +15,10 @@ Sistema automático que detecta cuando un servidor PRTG (Tandil o La Matanza) es
 - ✅ Alerta cuando se recupera la conexión
 
 ### **Protección contra Spam:**
-- 🕐 **Cooldown de 30 minutos** entre alertas del mismo PRTG
-- 📊 Umbral de 1 fallo consecutivo antes de alertar
-- 🔄 Reseteo automático cuando el servidor se recupera
+- ✅ Solo alerta **una vez** cuando detecta que el PRTG está caído
+- ✅ No reenvía alertas mientras el PRTG siga caído
+- ✅ GitHub Actions se ejecuta cada 5 minutos (intervalo natural)
+- 🔄 Alerta de recuperación cuando el servidor vuelve
 
 ### **Canales de Notificación:**
 - 📧 **Email** (prioridad CRÍTICA)
@@ -43,48 +44,33 @@ Se envía cuando:
 
 ## 📧 Formato de Alertas
 
-### **Email - PRTG Caído:**
+### **Email/Telegram - PRTG Caído:**
 ```
-Asunto: 🔴 ALERTA CRÍTICA: Servidor PRTG USITTEL TANDIL Caído
+Asunto: Alerta: Servidor PRTG USITTEL TANDIL No Responde
 
 USITTEL TANDIL
 
-🔴 SERVIDOR PRTG NO RESPONDE
-
-UBICACIÓN: USITTEL TANDIL
-URL: http://38.253.65.250:8080
-ESTADO: No se puede conectar al servidor
+TIPO: Servidor PRTG no responde
+ESTADO: No se puede conectar
 ERROR: fetch failed
 FECHA/HORA: 24/11/2025, 15:30:00
 
-⚠️ IMPACTO:
-- No se pueden consultar sensores de Tandil
-- Sistema de monitoreo automático afectado
-- GitHub Actions reportará fallos hasta que se recupere
-
-ACCIÓN REQUERIDA:
-1. Verificar conectividad del servidor PRTG
-2. Revisar si el servicio PRTG está corriendo
-3. Verificar firewall y permisos de red
+PRTG: http://38.253.65.250:8080/public/mapshow.htm?id=2197&mapid=7418EC41-A903-47CF-87A2-70E6CC8AAFF5
+Dashboard: https://monitoreo-redes.vercel.app/
 ```
 
-### **Email - PRTG Recuperado:**
+### **Email/Telegram - PRTG Recuperado:**
 ```
-Asunto: ✅ RECUPERADO: Servidor PRTG USITTEL TANDIL
+Asunto: Alerta: Servidor PRTG USITTEL TANDIL Recuperado
 
 USITTEL TANDIL
 
-✅ SERVIDOR PRTG RECUPERADO
-
-UBICACIÓN: USITTEL TANDIL
-URL: http://38.253.65.250:8080
+TIPO: Servidor PRTG recuperado
 ESTADO: Conexión restablecida
 FECHA/HORA: 24/11/2025, 15:45:00
 
-✅ ESTADO ACTUAL:
-- Servidor PRTG respondiendo correctamente
-- Monitoreo automático restablecido
-- GitHub Actions funcionando normalmente
+PRTG: http://38.253.65.250:8080/public/mapshow.htm?id=2197&mapid=7418EC41-A903-47CF-87A2-70E6CC8AAFF5
+Dashboard: https://monitoreo-redes.vercel.app/
 ```
 
 ---
@@ -112,8 +98,6 @@ FECHA/HORA: 24/11/2025, 15:45:00
 ```typescript
 // En prtgHealthMonitor.ts
 
-const FAILURE_THRESHOLD = 1;          // Fallos antes de alertar
-const ALERT_COOLDOWN = 1800;          // 30 minutos entre alertas
 const RECOVERY_ALERT_ENABLED = true;  // Alertar cuando se recupera
 
 const ALERT_RECIPIENTS = [
@@ -121,6 +105,10 @@ const ALERT_RECIPIENTS = [
   'ja@it-tel.com.ar',
   'md@it-tel.com.ar'
 ];
+
+// Links a mapas públicos de PRTG
+const PRTG_TANDIL_MAP = 'http://38.253.65.250:8080/public/mapshow.htm?id=2197&mapid=7418EC41-A903-47CF-87A2-70E6CC8AAFF5'
+const PRTG_MATANZA_MAP = 'http://stats.reditel.com.ar:8995/public/mapshow.htm?id=3929&mapid=90D14EB2-69FC-4D98-A211-75BDECF55027'
 ```
 
 ---
