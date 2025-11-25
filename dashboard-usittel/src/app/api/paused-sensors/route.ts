@@ -6,8 +6,9 @@
  * Devuelve información sobre sensores críticos que están pausados en PRTG
  */
 
+import { getPausedCriticalSensors, getPausedSensorsStats, hasCriticalSensorsPaused } from '@/lib/pausedSensorMonitor';
+
 import { NextResponse } from 'next/server';
-import { getPausedSensorsStats, hasCriticalSensorsPaused, getPausedCriticalSensors } from '@/lib/pausedSensorMonitor';
 
 export const dynamic = 'force-dynamic';
 

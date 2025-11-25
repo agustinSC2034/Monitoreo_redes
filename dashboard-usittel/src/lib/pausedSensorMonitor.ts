@@ -5,6 +5,9 @@
  * y no es posible monitorear su estado real
  */
 
+import { sendAlertEmail } from './emailService';
+import { sendTelegramAlert } from './telegramService';
+
 export interface PausedSensorStatus {
   sensorId: string;
   sensorName: string;
@@ -20,7 +23,7 @@ const CRITICAL_SENSORS_TANDIL = ['13682', '13684', '13683']; // CABASE, IPLAN, T
 const pausedStatus = new Map<string, PausedSensorStatus>();
 
 // Configuración
-const ALERT_ENABLED = false; // Por ahora solo logging, NO alertas
+const ALERT_ENABLED = true; // ✅ ALERTAS HABILITADAS para enlaces pausados
 const ALERT_RECIPIENTS = [
   'agustin.scutari@it-tel.com.ar',
   'ja@it-tel.com.ar',
@@ -60,8 +63,8 @@ export async function checkPausedSensor(
     console.log(`   - Tiempo: ${new Date().toLocaleString('es-AR')}`);
     console.log(`   - ⚠️ No es posible monitorear el estado del enlace mientras esté pausado`);
     
-    // TODO: Aquí se podría disparar alerta cuando ALERT_ENABLED = true
-    // await triggerPausedSensorAlert(sensorId, sensorName);
+    // Disparar alerta de sensor pausado
+    await triggerPausedSensorAlert(sensorId, sensorName);
     
     pausedStatus.set(sensorId, {
       ...currentStatus,
@@ -152,32 +155,67 @@ export function getPausedCriticalSensors(): Array<{sensorId: string, sensorName:
   return paused;
 }
 
-// 🚨 Función para disparar alerta (deshabilitada por ahora)
-// async function triggerPausedSensorAlert(sensorId: string, sensorName: string): Promise<void> {
-//   if (!ALERT_ENABLED) return;
-//   
-//   const message = `
-// ALERTA: Sensor Pausado en PRTG
-// 
-// SENSOR: ${sensorName}
-// ID: ${sensorId}
-// ESTADO: Pausado
-// 
-// ⚠️ No es posible monitorear el estado del enlace mientras el sensor esté pausado en PRTG.
-// 
-// ACCIÓN REQUERIDA:
-// - Verificar por qué el sensor está pausado en PRTG
-// - Reactivar el sensor si corresponde
-// - Revisar configuración de monitoreo
-// 
-// Dashboard: https://monitoreo-redes.vercel.app/
-// `.trim();
-//   
-//   console.log(`🚨 [PAUSED-ALERT] Enviando alerta de sensor pausado: ${sensorName}`);
-//   
-//   // Enviar por email
-//   // await sendAlertEmail(ALERT_RECIPIENTS, `Alerta: Sensor ${sensorName} Pausado`, message, 'high');
-//   
-//   // Enviar por Telegram
-//   // await sendTelegramAlert({...});
-// }
+/**
+ * 🚨 Disparar alerta de sensor pausado
+ */
+async function triggerPausedSensorAlert(sensorId: string, sensorName: string): Promise<void> {
+  if (!ALERT_ENABLED) return;
+  
+  const timestamp = new Date().toLocaleString('es-AR', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+    timeZone: 'America/Argentina/Buenos_Aires'
+  });
+  
+  const message = `
+Sensor: ${sensorName}
+ID: ${sensorId}
+
+TIPO: Sensor pausado en PRTG
+ESTADO: No es posible monitorear el enlace
+FECHA/HORA: ${timestamp}
+
+⚠️ El sensor está pausado en PRTG y no se puede verificar el estado del enlace.
+
+ACCIÓN REQUERIDA:
+- Verificar por qué está pausado
+- Reactivar si corresponde
+- Revisar configuración
+
+Dashboard: https://monitoreo-redes.vercel.app/
+`.trim();
+  
+  console.log(`🚨 [PAUSED-ALERT] Enviando alerta de sensor pausado: ${sensorName}`);
+  
+  // Enviar por email
+  try {
+    await sendAlertEmail(
+      ALERT_RECIPIENTS,
+      `Alerta: Sensor ${sensorName} Pausado en PRTG`,
+      message,
+      'high'
+    );
+    console.log(`✅ [PAUSED-ALERT] Email enviado`);
+  } catch (error) {
+    console.error(`❌ [PAUSED-ALERT] Error enviando email:`, error);
+  }
+  
+  // Enviar por Telegram
+  try {
+    await sendTelegramAlert({
+      sensorName: sensorName,
+      status: 'Sensor Pausado',
+      message: message,
+      location: 'USITTEL TANDIL',
+      sensorId: sensorId
+    });
+    console.log(`✅ [PAUSED-ALERT] Telegram enviado`);
+  } catch (error) {
+    console.error(`❌ [PAUSED-ALERT] Error enviando Telegram:`, error);
+  }
+}
