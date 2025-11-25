@@ -71,62 +71,23 @@ export async function GET(request: NextRequest) {
       
       const sensorId = String(sensor.objid || sensor.objid_raw || 'unknown');
       
-      // ⏰ Ajustar timezone del lastcheck (solo para Tandil)
+      // ⏰ PRTG ya devuelve la hora en hora local de Argentina, solo limpiar formato
       let adjustedLastCheck = sensor.lastcheck || '';
-      if (typeof adjustedLastCheck === 'string' && adjustedLastCheck && location === 'tandil') {
-        console.log(`[DEBUG-TZ] Original: "${adjustedLastCheck}"`);
-        // Quitar HTML y texto "[hace X]"
+      if (typeof adjustedLastCheck === 'string' && adjustedLastCheck) {
+        // Limpiar HTML y texto extra (ambas ubicaciones ya vienen en hora local)
         const clean = adjustedLastCheck
           .replace(/<[^>]*>/g, '') // Quitar tags HTML
           .replace(/\[hace[^\]]*\]/g, '') // Quitar "[hace X s]"
           .trim();
-        console.log(`[DEBUG-TZ] Limpio: "${clean}"`);
-        // Buscar fecha d/m/yyyy o dd/mm/yyyy hh:mm:ss (1 o 2 dígitos en día y mes)
-        const match = clean.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{2}):(\d{2}):(\d{2})/);
-        console.log(`[DEBUG-TZ] Match resultado:`, match);
-        if (match) {
-          const [, dd, mm, yyyy, HH, MM, SS] = match;
-          // Parsear como UTC y restar 3 horas
-          const utcDate = new Date(Date.UTC(
-            parseInt(yyyy),
-            parseInt(mm) - 1,
-            parseInt(dd),
-            parseInt(HH),
-            parseInt(MM),
-            parseInt(SS)
-          ));
-          // Restar 3 horas (3 * 60 * 60 * 1000 ms)
-          utcDate.setTime(utcDate.getTime() - (3 * 60 * 60 * 1000));
-          // Formatear de vuelta
-          const day = String(utcDate.getUTCDate()).padStart(2, '0');
-          const month = String(utcDate.getUTCMonth() + 1).padStart(2, '0');
-          const year = utcDate.getUTCFullYear();
-          const hours = String(utcDate.getUTCHours()).padStart(2, '0');
-          const minutes = String(utcDate.getUTCMinutes()).padStart(2, '0');
-          const seconds = String(utcDate.getUTCSeconds()).padStart(2, '0');
-          adjustedLastCheck = `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
-          console.log(`[TIMEZONE] Ajustado: ${sensor.lastcheck} -> ${adjustedLastCheck}`);
-        }
-      } else if (typeof adjustedLastCheck === 'string' && adjustedLastCheck) {
-        // Para LARANET, solo limpiar el formato (ya viene en hora local)
-        console.log(`[DEBUG-LARANET] Original lastcheck: "${adjustedLastCheck}"`);
-        
-        const clean = adjustedLastCheck
-          .replace(/<[^>]*>/g, '') // Quitar tags HTML
-          .replace(/\[hace[^\]]*\]/g, '') // Quitar "[hace X s]"
-          .trim();
-        
-        console.log(`[DEBUG-LARANET] Limpio: "${clean}"`);
         
         // Buscar si hay formato 12h con AM/PM
         const match12h = clean.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2}):(\d{2})\s+(AM|PM)/i);
-        console.log(`[DEBUG-LARANET] Match 12h:`, match12h);
         
         if (match12h) {
+          // Convertir formato 12h a 24h
           const [, dd, mm, yyyy, HH, MM, SS, ampm] = match12h;
           let hours = parseInt(HH);
           
-          // Convertir a formato 24h
           if (ampm.toUpperCase() === 'PM' && hours !== 12) {
             hours += 12;
           } else if (ampm.toUpperCase() === 'AM' && hours === 12) {
@@ -134,9 +95,10 @@ export async function GET(request: NextRequest) {
           }
           
           adjustedLastCheck = `${dd.padStart(2, '0')}/${mm.padStart(2, '0')}/${yyyy} ${String(hours).padStart(2, '0')}:${MM}:${SS}`;
-          console.log(`[DEBUG-LARANET] Convertido a 24h: "${adjustedLastCheck}"`);
         } else {
-          adjustedLastCheck = clean;
+          // Buscar fecha en formato 24h estándar
+          const match24h = clean.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{2}):(\d{2}):(\d{2})/);
+          adjustedLastCheck = match24h ? match24h[0] : clean;
         }
       }
       

@@ -21,7 +21,7 @@ interface PRTGHealthStatus {
 const healthStatus = new Map<PRTGLocation, PRTGHealthStatus>();
 
 // Configuración
-const RECOVERY_ALERT_ENABLED = true; // Enviar alerta cuando se recupera
+const RECOVERY_ALERT_ENABLED = false; // NO enviar alerta cuando se recupera (solo alertar cuando está caído)
 
 // Destinatarios de alertas (mismo que las alertas de sensores)
 const ALERT_RECIPIENTS = [
