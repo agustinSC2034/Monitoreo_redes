@@ -13,6 +13,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { processSensorData, startMonitoringSession } from '@/lib/alertMonitor';
 import { getPRTGClient, type PRTGLocation } from '@/lib/prtgClient';
 import { recordPRTGFailure, recordPRTGSuccess } from '@/lib/prtgHealthMonitor';
+import { checkPausedSensor } from '@/lib/pausedSensorMonitor';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60; // 60 segundos máximo
@@ -68,6 +69,9 @@ export async function GET(request: NextRequest) {
         const sensor = await prtgClient.getSensor(parseInt(sensorId));
         
         console.log(`📊 [CRON] Sensor ${sensorId} (${sensor.name}): ${sensor.status} - ${sensor.lastvalue}`);
+        
+        // 🔍 Verificar si el sensor está pausado (solo logging, no alertas)
+        await checkPausedSensor(sensorId, sensor.name, sensor.status, location);
         
         // Procesar el sensor (esto dispara alertas si es necesario)
         console.log(`⚙️ [CRON] Procesando alertas para sensor ${sensorId}...`);
