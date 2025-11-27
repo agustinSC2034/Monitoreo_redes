@@ -51,8 +51,8 @@ ALERTA DE MONITOREO
 
 ${options.message}`.trim();
 
-    // 📊 Primero enviar la imagen del gráfico
-    const chartUrl = `https://monitoreo-redes.vercel.app/api/chart-proxy?id=${options.sensorId}&location=${options.location.toLowerCase().includes('tandil') ? 'tandil' : 'lamatanza'}`;
+    // 📊 Primero enviar la imagen del gráfico (con timestamp para evitar caché)
+    const chartUrl = `https://monitoreo-redes.vercel.app/api/chart-proxy?id=${options.sensorId}&location=${options.location.toLowerCase().includes('tandil') ? 'tandil' : 'lamatanza'}&_=${Date.now()}`;
     
     try {
       await telegramBot.sendPhoto(TELEGRAM_CHAT_ID, chartUrl, {
