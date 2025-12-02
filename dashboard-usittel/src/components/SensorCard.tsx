@@ -81,15 +81,10 @@ export default function SensorCard({
     return new Date(isoString);
   };
 
-  // Formatear fecha
-  const formatDisplayDate = (d: Date): string => {
-    const day = String(d.getDate()).padStart(2, '0');
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const year = d.getFullYear();
-    const hours = String(d.getHours()).padStart(2, '0');
-    const minutes = String(d.getMinutes()).padStart(2, '0');
-    const seconds = String(d.getSeconds()).padStart(2, '0');
-    return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
+  // Formatear fecha - directamente del string original sin conversión
+  const formatDisplayDate = (s: string): string => {
+    // El string ya viene en formato correcto de Argentina, solo lo retornamos
+    return s;
   };
 
   // Formatear relativo
@@ -106,8 +101,7 @@ export default function SensorCard({
 
   const absoluteLastCheck = useMemo(() => {
     const cleaned = cleanLastCheck(lastCheck);
-    const d = parseArgDate(cleaned);
-    return d ? formatDisplayDate(d) : cleaned;
+    return formatDisplayDate(cleaned);
   }, [lastCheck]);
   
   const relativeLastCheck = useMemo(() => {
