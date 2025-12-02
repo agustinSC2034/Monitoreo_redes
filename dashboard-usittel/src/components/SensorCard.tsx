@@ -70,19 +70,15 @@ export default function SensorCard({
     return cleaned;
   };
 
-  // Parsear fecha
+  // Parsear fecha (asumiendo que viene en hora de Argentina UTC-3)
   const parseArgDate = (s: string): Date | null => {
     const m = s.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{2}):(\d{2}):(\d{2})/);
     if (!m) return null;
     const [, dd, mm, yyyy, HH, MM, SS] = m;
-    return new Date(
-      parseInt(yyyy),
-      parseInt(mm) - 1,
-      parseInt(dd),
-      parseInt(HH),
-      parseInt(MM),
-      parseInt(SS)
-    );
+    
+    // Crear la fecha en formato ISO con zona horaria de Argentina (UTC-3)
+    const isoString = `${yyyy}-${mm.padStart(2, '0')}-${dd.padStart(2, '0')}T${HH}:${MM}:${SS}-03:00`;
+    return new Date(isoString);
   };
 
   // Formatear fecha
