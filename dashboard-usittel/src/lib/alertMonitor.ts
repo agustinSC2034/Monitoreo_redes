@@ -45,7 +45,24 @@ const lastWhatsAppBySensor = new Map<string, number>();
 const WHATSAPP_GLOBAL_COOLDOWN = 120; // 2 minutos entre notificaciones WhatsApp del mismo sensor
 
 /**
- * 🔑 Iniciar nueva sesión de monitoreo (llamar al inicio de cada GitHub Action)
+ * �️ Determinar ubicación del sensor basándose en su ID
+ * USITTEL (Tandil): sensor_id >= 10000 (13682, 13684, 13683, 13673, 13726, etc.)
+ * LARANET (La Matanza): sensor_id < 10000 (2137, 3942, 4640, 4665, 4736, 4737, 5159, 5187, 5281, 5283, 6689, etc.)
+ */
+function getLocationFromSensorId(sensorId: string): 'tandil' | 'matanza' {
+  const numericId = parseInt(sensorId, 10);
+  return numericId >= 10000 ? 'tandil' : 'matanza';
+}
+
+/**
+ * 🗺️ Determinar nombre de ubicación formateado
+ */
+function getLocationName(sensorId: string): string {
+  return getLocationFromSensorId(sensorId) === 'tandil' ? 'USITTEL TANDIL' : 'LARANET LA MATANZA';
+}
+
+/**
+ * �🔑 Iniciar nueva sesión de monitoreo (llamar al inicio de cada GitHub Action)
  */
 export function startMonitoringSession(sessionId?: string) {
   currentSessionId = sessionId || `session_${Date.now()}`;
@@ -654,9 +671,7 @@ async function triggerAlert(rule: AlertRule, sensor: SensorHistory, change: Stat
               sensorName: sensor.sensor_name,
               status: sensor.status,
               message,
-              location: sensor.sensor_id.startsWith('4') || sensor.sensor_id.startsWith('5') || sensor.sensor_id.startsWith('3') || sensor.sensor_id.startsWith('6') 
-                ? 'LARANET LA MATANZA' 
-                : 'USITTEL TANDIL',
+              location: getLocationName(sensor.sensor_id),
               sensorId: sensor.sensor_id
             });
             channelResults.push({ channel: 'telegram', success: telegramSuccess });
@@ -727,11 +742,7 @@ function formatAlertMessage(rule: AlertRule, sensor: SensorHistory, change: Stat
   });
   
   // Determinar ubicación según el sensor (SIN EMOJIS)
-  const location = sensor.sensor_name.includes('(063)') || sensor.sensor_name.includes('CABASE') || 
-                   sensor.sensor_name.includes('IPLAN') || sensor.sensor_name.includes('TECO') ||
-                   sensor.sensor_name.includes('RDA') || sensor.sensor_name.includes('DTV')
-    ? 'USITTEL TANDIL'
-    : 'LARANET LA MATANZA';
+  const location = getLocationName(sensor.sensor_id);
   
   let message = `${location}\n\n`;
   message += `SENSOR: ${sensor.sensor_name}\n`;
@@ -795,10 +806,7 @@ async function sendEmailAlert(rule: AlertRule, message: string, sensor: SensorHi
     : `Alerta: ${rule.name}`;
   
   // Determinar location según sensor_id
-  const location = sensor.sensor_id.startsWith('4') || sensor.sensor_id.startsWith('5') || 
-                   sensor.sensor_id.startsWith('3') || sensor.sensor_id.startsWith('6')
-    ? 'matanza' 
-    : 'tandil';
+  const location = getLocationFromSensorId(sensor.sensor_id);
   
   const success = await sendAlertEmail(
     emailRecipients, 
