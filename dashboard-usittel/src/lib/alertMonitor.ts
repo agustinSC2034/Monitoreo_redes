@@ -45,12 +45,23 @@ const lastWhatsAppBySensor = new Map<string, number>();
 const WHATSAPP_GLOBAL_COOLDOWN = 120; // 2 minutos entre notificaciones WhatsApp del mismo sensor
 
 /**
- * �️ Determinar ubicación del sensor basándose en su ID
- * USITTEL (Tandil): sensor_id >= 10000 (13682, 13684, 13683, 13673, 13726, etc.)
- * LARANET (La Matanza): sensor_id < 10000 (2137, 3942, 4640, 4665, 4736, 4737, 5159, 5187, 5281, 5283, 6689, etc.)
+ * 🗺️ Determinar ubicación del sensor basándose en su ID
+ * USITTEL (Tandil): 
+ *   - sensor_id >= 10000 (13682, 13684, 13683, 13673, 13726, etc.)
+ *   - Excepción: 2137 (RDA) pertenece a USITTEL aunque sea < 10000
+ * LARANET (La Matanza): 
+ *   - sensor_id < 10000 (3942, 4640, 4665, 4736, 4737, 5159, 5187, 6689, etc.)
+ *   - Excluyendo: 2137
  */
 function getLocationFromSensorId(sensorId: string): 'tandil' | 'matanza' {
   const numericId = parseInt(sensorId, 10);
+  
+  // Excepción: sensor 2137 (RDA) es de USITTEL Tandil
+  if (numericId === 2137) {
+    return 'tandil';
+  }
+  
+  // Regla general: >= 10000 es Tandil, < 10000 es Matanza
   return numericId >= 10000 ? 'tandil' : 'matanza';
 }
 
