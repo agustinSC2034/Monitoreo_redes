@@ -256,6 +256,23 @@ export default function Home() {
               
               <NotificationBell />
               
+              {/* Botón Configuración */}
+              <a
+                href="/dashboard/configuracion"
+                className={`px-3 sm:px-4 py-1.5 sm:py-2 text-sm rounded-md border transition-all duration-200 hover:scale-105 inline-flex items-center gap-1.5 ${
+                  theme === 'light'
+                    ? 'bg-white border-gray-300 text-gray-700 hover:bg-gray-100 hover:border-gray-400'
+                    : 'bg-gray-800 border-gray-600 text-gray-300 hover:bg-gray-750 hover:border-gray-500'
+                }`}
+                title="Configurar alertas"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="3" />
+                  <path d="M12 1v6m0 6v6m5.2-13.2l-4.2 4.2m-2 2l-4.2 4.2M23 12h-6m-6 0H5m13.2 5.2l-4.2-4.2m-2-2l-4.2-4.2" />
+                </svg>
+                <span className="hidden sm:inline">Configuración</span>
+              </a>
+              
               {/* Vista - Grid o Lista */}
               <button
                 onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
