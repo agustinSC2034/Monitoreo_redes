@@ -15,7 +15,7 @@
     "dotenv": "^17.2.3",
     "lucide-react": "^0.552.0",
     "module-alias": "^2.2.3",
-    "next": "16.0.0",
+    "next": "16.1.0",
     "node-telegram-bot-api": "^0.66.0",
     "nodemailer": "^7.0.10",
     "react": "19.2.0",
@@ -32,7 +32,7 @@
     "@types/react-dom": "^19",
     "babel-plugin-react-compiler": "1.0.0",
     "eslint": "^9",
-    "eslint-config-next": "16.0.0",
+    "eslint-config-next": "16.1.0",
     "sharp": "^0.34.5",
     "tailwindcss": "^4",
     "typescript": "^5"
